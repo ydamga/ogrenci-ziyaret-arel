@@ -7,6 +7,7 @@
 <style>
   body { margin: 0; background: #F4F7FB; color: #0D1B2A; font: 14px/1.5 "Segoe UI", Tahoma, sans-serif; }
   #obsApp > .shell { max-width: 640px; margin: 60px auto; padding: 24px; background: #fff; border: 1px solid #DCE3EC; border-radius: 14px; }
+  #obsApp a { color: #8F6F2E; font-weight: 600; }
   #obsApp h1 { margin: 0 0 8px; font-size: 18px; }
 </style>
 </head>
@@ -16,17 +17,18 @@
   <div class="shell">
     <h1>OBS Öğrenci Arama</h1>
     <p id="shellMsg">Sayfa yükleniyor…</p>
+    <p><a id="scriptLink" href="https://gist.githubusercontent.com/ydamga/7b12c08a7bdc12cd2fe6b374f23ef659/raw/obs-ziyaretci.user.js">Scripti indirmek için tıklayın.</a></p>
   </div>
 </div>
 <!-- Bu dosya yalnızca bir kabuktur: arayüz Tampermonkey scriptinden, öğrenci listesi SharePoint'teki Excel'den gelir.
-     Dosyada öğrenci verisi yoktur; güncelleme gerekmez. Dosya adı "obs-ogrenci-arama" ile başlamalıdır. -->
+     Dosyada öğrenci verisi yoktur; güncelleme gerekmez. Dosya olarak açılacaksa adı "obs-ogrenci-arama" ile başlamalıdır; GitHub Pages'te index.html olarak yayınlanır. -->
 <script>
 setTimeout(function () {
   var host = document.getElementById('obsApp');
   if (host && !host.getAttribute('data-ready')) {
     document.getElementById('shellMsg').textContent =
-      'Tampermonkey scripti bu sayfaya bağlanamadı. OBS scriptinin (v3.0 veya üstü) kurulu ve açık olduğunu, ' +
-      'Tampermonkey’de “Dosya URL’lerine erişime izin ver” seçeneğinin açık olduğunu ve dosya adının “obs-ogrenci-arama” ile başladığını kontrol edin.';
+      'Tampermonkey scripti bu sayfaya bağlanamadı. OBS scriptinin (v3.2 veya üstü) kurulu ve açık olduğunu, ' +
+      'Tampermonkey’de “Dosya URL’lerine erişime izin ver” seçeneğinin (dosya olarak açtıysanız) açık olduğunu kontrol edin. Script kurulu değilse aşağıdaki bağlantıdan kurun.';
   }
 }, 2500);
 </script>
