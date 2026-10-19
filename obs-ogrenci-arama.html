@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OBS Öğrenci Arama</title>
+<style>
+  body { margin: 0; background: #F4F7FB; color: #0D1B2A; font: 14px/1.5 "Segoe UI", Tahoma, sans-serif; }
+  #obsApp > .shell { max-width: 640px; margin: 60px auto; padding: 24px; background: #fff; border: 1px solid #DCE3EC; border-radius: 14px; }
+  #obsApp h1 { margin: 0 0 8px; font-size: 18px; }
+</style>
+</head>
+<body>
+<div id="obsBridgeBox" hidden></div>
+<div id="obsApp">
+  <div class="shell">
+    <h1>OBS Öğrenci Arama</h1>
+    <p id="shellMsg">Sayfa yükleniyor…</p>
+  </div>
+</div>
+<!-- Bu dosya yalnızca bir kabuktur: arayüz Tampermonkey scriptinden, öğrenci listesi SharePoint'teki Excel'den gelir.
+     Dosyada öğrenci verisi yoktur; güncelleme gerekmez. Dosya adı "obs-ogrenci-arama" ile başlamalıdır. -->
+<script>
+setTimeout(function () {
+  var host = document.getElementById('obsApp');
+  if (host && !host.getAttribute('data-ready')) {
+    document.getElementById('shellMsg').textContent =
+      'Tampermonkey scripti bu sayfaya bağlanamadı. OBS scriptinin (v3.0 veya üstü) kurulu ve açık olduğunu, ' +
+      'Tampermonkey’de “Dosya URL’lerine erişime izin ver” seçeneğinin açık olduğunu ve dosya adının “obs-ogrenci-arama” ile başladığını kontrol edin.';
+  }
+}, 2500);
+</script>
+</body>
+</html>
