@@ -76,7 +76,7 @@ body.g-done{overflow:hidden}
       <div class="step"><b>Öğrenci Excel dosyası</b>
         <input type="file" id="sFile" accept=".xlsx,.xls,.csv,.xlsm"><div class="info" id="sInfo"></div><div class="info" id="sStatus"></div></div>
       <div class="step"><b>Dosyaya neler girsin?</b>
-        <label class="opt"><input type="checkbox" id="sName" checked><span>Öğrenci adı ve soyadı<small>Kapatırsanız yalnızca numara görünür.</small></span></label>
+        <label class="opt"><input type="checkbox" id="sName" checked><span>Öğrenci adı ve soyadı<small>Kapatırsanız yalnızca numara görünür ve isimle arama çalışmaz.</small></span></label>
         <label class="opt"><input type="checkbox" id="sProg" checked><span>Program ve dönem bilgisi</span></label>
         <label class="opt"><input type="checkbox" id="sHoca" checked><span>Derslerin öğretim elemanları<small>Ders kodu ve şubeye göre öğretim elemanı Excel'inden eşleştirilir; o dosya yüklenmezse eklenmez.</small></span></label>
         <label class="opt"><input type="checkbox" id="sSinif" checked><span>Bölüm ve sınıf seçimi<small>Seçilen bölüm ve sınıfın haftalık programını gösterir. Müfredat dersleri öğretim elemanı Excel'inden, sınıftaki öğrencilerin kayıtlı olduğu dersler öğrenci Excel'inin "Sınıf" sütunundan alınır. İki dosyadan biri yeterlidir.</small></span></label>
@@ -256,7 +256,7 @@ body.mo{overflow:hidden}
 var DATA = __DATA__;
 var TX={
 tr:{days:["Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi","Pazar"],tabOgr:"Öğrenci",tabHoca:"Öğretim elemanı",subNum:"Numarayla",subSin:"Bölüm ve sınıfla",
- phNum:"Öğrenci numaranız",phHoca:"Ad veya soyad yazın",go:"Programı göster",print:"Yazdır",list:"Ders listesi",attT:"Devam durumu",
+ phNum:"Öğrenci numarası veya adı",phHoca:"Ad veya soyad yazın",go:"Programı göster",print:"Yazdır",list:"Ders listesi",attT:"Devam durumu",
  a:{course:"Ders",wk:"H",week:"Hafta",abs:"Devamsızlık",V:"Var",Y:"Yok",N:"Yoklama açılmadı",other:"Diğer",of:function(y,t){return y+" / "+t},tip:"Yoklama alınan haftalarda gelmediği hafta sayısı"},selProg:"Bölüm seçin",prog:"Bölüm",sin:"Sınıf",
  year:function(s){return/^\d+$/.test(s)?s+". sınıf":s},
  c:{code:"Kod",course:"Ders",sec:"Şube",year:"Sınıf",type:"Türü",tul:"T-U-L",cr:"Kredi",ects:"AKTS",stu:"Öğrenci",prog:"Program",times:"Saatler",inst:"Öğretim elemanı"},
@@ -266,10 +266,10 @@ tr:{days:["Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi","Pazar
  minor:function(n){return"Sınıfın az öğrencisinin aldığı "+n+" dersi de göster"},minorTip:"Bu sınıfın müfredatında olmayan ve sınıftan az öğrencinin (%10'dan az) aldığı dersler: alttan, üstten, ÇAP, yandal vb.",clsN:"Bu sınıftan dersi alan öğrenci sayısı",
  r:{title:"Dersi alan öğrenciler",sec:"Şube",n:function(n){return"Listede "+n+" öğrenci"},diff:function(n){return" (sistemdeki sayı: "+n+")"},
    filter:"Numara veya adla filtrele",no:"Öğrenci No",name:"Ad Soyad",prog:"Program",why:"Kayıt nedeni",close:"Kapat",open:"Öğrenci listesini aç",stu:"Ders programını aç",none:"Eşleşen öğrenci yok."},
- m:{emptyHoca:"Bir ad veya soyad yazın.",emptyNum:"Öğrenci numaranızı girin.",nfHoca:function(t){return"“"+t+"” ile eşleşen öğretim elemanı bulunamadı."},
-   nfNum:function(t){return"“"+t+"” numaralı öğrenci bulunamadı."},multi:function(n){return n+" kişi eşleşti. Listeden seçin."},conflict:"Dikkat: programda çakışan dersler var (kırmızı çerçeveli bloklar)."}},
+ m:{emptyHoca:"Bir ad veya soyad yazın.",emptyNum:"Öğrenci numarası ya da adı yazın.",nfHoca:function(t){return"“"+t+"” ile eşleşen öğretim elemanı bulunamadı."},
+   nfNum:function(t){return"“"+t+"” numarası ya da adıyla eşleşen öğrenci bulunamadı."},multi:function(n){return n+" kişi eşleşti. Listeden seçin."},conflict:"Dikkat: programda çakışan dersler var (kırmızı çerçeveli bloklar)."}},
 en:{days:["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],tabOgr:"Student",tabHoca:"Instructor",subNum:"By student number",subSin:"By department & year",
- phNum:"Your student number",phHoca:"Type a first or last name",go:"Show schedule",print:"Print",list:"Course list",attT:"Attendance",
+ phNum:"Student number or name",phHoca:"Type a first or last name",go:"Show schedule",print:"Print",list:"Course list",attT:"Attendance",
  a:{course:"Course",wk:"W",week:"Week",abs:"Absences",V:"Present",Y:"Absent",N:"Not taken",other:"Other",of:function(y,t){return y+" / "+t},tip:"Weeks absent out of weeks attendance was taken"},selProg:"Select department",prog:"Department",sin:"Year",
  year:function(s){return/^\d+$/.test(s)?"Year "+s:s},
  c:{code:"Code",course:"Course",sec:"Section",year:"Year",type:"Type",tul:"T-P-L",cr:"Credits",ects:"ECTS",stu:"Students",prog:"Program",times:"Times",inst:"Instructor"},
@@ -279,8 +279,8 @@ en:{days:["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"
  minor:function(n){return"Also show "+n+(n===1?" course":" courses")+" taken by few students in this class"},minorTip:"Courses outside this year's curriculum taken by under 10% of the class: repeats, courses ahead, double major, minor, etc.",clsN:"Students from this class taking the course",
  r:{title:"Enrolled students",sec:"Section",n:function(n){return n+(n===1?" student":" students")+" listed"},diff:function(n){return" (system count: "+n+")"},
    filter:"Filter by number or name",no:"Student No",name:"Name",prog:"Program",why:"Enrollment type",close:"Close",open:"Open student list",stu:"Open schedule",none:"No matching students."},
- m:{emptyHoca:"Please type a name.",emptyNum:"Please enter your student number.",nfHoca:function(t){return"No instructor matches “"+t+"”."},
-   nfNum:function(t){return"No student found with number “"+t+"”."},multi:function(n){return n+" people match. Pick one from the list."},conflict:"Note: this schedule has overlapping classes (blocks with a red border)."}}};
+ m:{emptyHoca:"Please type a name.",emptyNum:"Please enter a student number or name.",nfHoca:function(t){return"No instructor matches “"+t+"”."},
+   nfNum:function(t){return"No student found matching “"+t+"”."},multi:function(n){return n+" people match. Pick one from the list."},conflict:"Note: this schedule has overlapping classes (blocks with a red border)."}}};
 var LANG="tr",L=TX.tr;
 try{var sv=localStorage.getItem("dp-lang");if(sv==="en"||sv==="tr")LANG=sv}catch(e){}
 var MODE="",D=null,STATE={},lastOgr="",CUR=null,MSG=null,backTo="";
@@ -292,6 +292,9 @@ function isElec(t){return/se[cç]meli/i.test(t||"")}function isComp(t){return/zo
 function tur(t){return isComp(t)?L.comp:isElec(t)?L.elec:t}
 var q=$("q"),sug=$("sug"),act=-1,hits=[];
 var hasOgr=!!(DATA.ogrenci||DATA.sinif);
+if(DATA.ogrenci&&!DATA.ogrenci.list){var SP=DATA.ogrenci.people;
+  DATA.ogrenci.list=Object.keys(SP).filter(function(k){return SP[k].name}).map(function(k){var P=SP[k];
+    return{k:k,label:P.name+(P.info&&P.info.length?" — "+P.info.join(", "):""),s:norm(P.name)}}).sort(function(a,b){return a.s.localeCompare(b.s,"tr")})}
 [].forEach.call($("tabs").children,function(b){
   if(b.dataset.t==="ogr"?!hasOgr:!DATA.hoca)b.classList.add("hidden");
   b.onclick=function(){setMode(b.dataset.t==="hoca"?"hoca":(lastOgr||(DATA.ogrenci?"ogrenci":"sinif")))}});
@@ -362,18 +365,18 @@ function setMode(m){
 
 function search(t){var w=norm(t).split(" ").filter(Boolean);if(!w.length)return[];
   return D.list.filter(function(p){return w.every(function(x){return p.s.indexOf(x)>-1})})}
-function drawSug(){if(MODE!=="hoca")return;hits=search(q.value).slice(0,12);act=-1;
+function drawSug(){if(MODE==="sinif"||!D||!D.list)return;hits=search(q.value).slice(0,12);act=-1;
   if(!hits.length||!q.value.trim()){sug.classList.add("hidden");return}
   sug.innerHTML=hits.map(function(p,i){return'<button type="button" data-i2="'+i+'">'+esc(p.label)+'</button>'}).join("");sug.classList.remove("hidden")}
 sug.addEventListener("mousedown",function(e){var b=e.target.closest("button");if(b){e.preventDefault();pick(hits[+b.dataset.i2])}});
 q.addEventListener("input",drawSug);
 q.addEventListener("blur",function(){setTimeout(function(){sug.classList.add("hidden")},100)});
 q.addEventListener("keydown",function(e){
-  if(MODE==="hoca"&&!sug.classList.contains("hidden")&&(e.key==="ArrowDown"||e.key==="ArrowUp")){e.preventDefault();
+  if(MODE!=="sinif"&&!sug.classList.contains("hidden")&&(e.key==="ArrowDown"||e.key==="ArrowUp")){e.preventDefault();
     act=(act+(e.key==="ArrowDown"?1:-1)+hits.length)%hits.length;
     [].forEach.call(sug.children,function(c,i){c.classList.toggle("act",i===act)});return}
   if(e.key==="Escape")sug.classList.add("hidden");
-  if(e.key==="Enter"){e.preventDefault();if(MODE==="hoca"&&act>-1)pick(hits[act]);else go()}});
+  if(e.key==="Enter"){e.preventDefault();if(MODE!=="sinif"&&act>-1&&!sug.classList.contains("hidden"))pick(hits[act]);else go()}});
 $("go").onclick=go;
 function hide(){CUR=null;$("res").classList.add("hidden")}
 function go(){msg("");var t=q.value.trim(),H=MODE==="hoca";
@@ -383,9 +386,13 @@ function go(){msg("");var t=q.value.trim(),H=MODE==="hoca";
     if(!h.length){msg("nfHoca",t);hide();return}
     drawSug();q.focus();msg("multi",h.length);return}
   var no=t.toLocaleUpperCase("tr"),p=D.people[no];
-  if(!p){msg("nfNum",t);hide();return}
-  render(p,"ogrenci",no)}
-function pick(it){sug.classList.add("hidden");q.value=it.label;msg("");render(D.people[it.k],"hoca","")}
+  if(p)return render(p,"ogrenci",no);
+  var h=D.list?search(t):[];
+  if(h.length===1)return pick(h[0]);
+  if(h.length){drawSug();q.focus();msg("multi",h.length);return}
+  msg("nfNum",t);hide()}
+function pick(it){sug.classList.add("hidden");q.value=it.label;msg("");
+  if(MODE==="hoca")render(D.people[it.k],"hoca","");else render(D.people[it.k],"ogrenci",it.k)}
 
 function hl(c,sep){if(!c.hn)return"";return c.hn.map(function(n,i){var k=c.hk&&c.hk[i];
   return DATA.hoca&&k&&DATA.hoca.people[k]?'<button type="button" class="hl" data-k="'+esc(k)+'" title="'+esc(n+L.open)+'">'+esc(n)+'</button>':esc(n)}).join(sep||", ")}
