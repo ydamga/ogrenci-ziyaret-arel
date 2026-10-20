@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Haftalık Ders Programı</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#E9EDF3;--surface:#fff;--ink:#18223A;--muted:#5C6780;--line:#D3DAE5;--accent:#2F4FD8;--ok:#16875A;--warn:#B42318}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5}
+.wrap{max-width:980px;margin:0 auto;padding:32px 20px}
+h1{font-size:28px;margin:0 0 6px;letter-spacing:-.01em}
+p.lead{color:var(--muted);margin:0 0 22px;max-width:72ch}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:760px){.cols{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px}
+.card h2{font-size:19px;margin:0 0 4px}
+.card .sub{color:var(--muted);font-size:14px;margin:0 0 16px}
+.step{margin:0 0 16px}
+.step > b{display:block;font-size:14px;margin-bottom:6px}
+label.opt{display:flex;gap:10px;align-items:flex-start;margin:6px 0;cursor:pointer;font-size:14px}
+label.opt small{display:block;color:var(--muted)}
+input[type=text]{width:100%;box-sizing:border-box;font:inherit;padding:9px 11px;border:1px solid var(--line);border-radius:9px}
+.note{color:var(--muted);font-size:13px;margin:8px 0 0}
+.btn{font:inherit;font-weight:700;border:0;border-radius:9px;padding:11px 18px;background:var(--accent);color:#fff;cursor:pointer;width:100%}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.status{margin-top:10px;font-weight:600;font-size:14px}
+.info{color:var(--muted);font-size:14px;margin-top:6px}
+.ok{color:var(--ok)}.err{color:var(--warn)}
+.hidden{display:none!important}
+.btn.inline{width:auto}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+body.g-live>.wrap{display:none}
+#gLive[hidden],#gBar{display:none}
+.g-card{max-width:560px;margin:12vh auto 0;padding:28px 30px;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+.g-card h1{font-size:24px;margin:0 0 14px;text-align:center}
+.g-msg{color:var(--muted);margin:0 0 10px}.g-msg b{color:var(--ink)}
+.g-msg a,.g-steps a{color:var(--accent);font-weight:600}
+.g-err{color:var(--warn);font-weight:600;margin:0 0 10px}
+.g-det{white-space:pre-wrap;font-size:12px;color:var(--muted);background:var(--bg);border-radius:8px;padding:10px;margin:0 0 10px;max-height:160px;overflow:auto}
+.g-steps{margin:0 0 16px;padding-left:22px;color:var(--ink)}.g-steps li{margin:6px 0}
+.g-btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:8px}
+.g-b{width:auto}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.g-spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;margin-right:8px;vertical-align:-2px;animation:gS .8s linear infinite}
+@keyframes gS{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.g-spin{animation:none}}
+body.g-done #gBar{display:flex;position:fixed;top:0;left:0;right:0;height:50px;z-index:10;align-items:center;gap:10px;padding:0 14px;background:var(--surface);border-bottom:1px solid var(--line);box-sizing:border-box}
+#gBar b{font-size:15px;margin-right:4px}
+#gBar .seg{display:inline-flex;background:var(--bg);border-radius:9px;padding:3px;gap:3px}
+#gBar button{font:inherit;font-size:14px;font-weight:600;border:0;background:none;color:var(--muted);padding:6px 12px;border-radius:7px;cursor:pointer}
+#gBar .seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+#gBar .sp{flex:1}
+#gBar .act{border:1px solid var(--line);color:var(--ink)}
+#gBar #gMsg{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+#gBar #gMsg.err{color:var(--warn)}
+#gBar button:disabled{opacity:.5;cursor:wait}
+#gBar button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+#gFrame{position:fixed;top:50px;left:0;width:100%;height:calc(100% - 50px);border:0;background:var(--bg)}
+body.g-done>.wrap{display:none}
+body.g-done{overflow:hidden}
+@media (max-width:560px){#gBar b{display:none}}
+</style>
+</head>
+<body>
+<div id="gBar"><b>Ders programı</b><span id="gMsg" role="status"></span><span class="sp"></span><button type="button" class="act" id="gRefresh" title="Raporları SharePoint'ten yeniden oku ve bilgisayarda sakla">Güncelle</button></div>
+<div id="gLive" hidden></div>
+<div class="wrap">
+  <h1>Program hazırlayıcı</h1>
+  <p class="lead">Excel dosyalarını yükleyin; tek bir paylaşılabilir dosya oluşur. Dosyanın üstündeki düğmelerle öğrenci ve öğretim elemanı görünümleri arasında geçilir. Öğrenci görünümünde numarayla ya da bölüm ve sınıf seçerek program açılır. Sayfada Türkçe/İngilizce geçiş düğmeleri bulunur. Excel dosyaları bu bilgisayardan dışarı çıkmaz.</p>
+
+  <div class="cols">
+    <section class="card">
+      <h2>Öğrenci</h2>
+      <p class="sub">Öğrenci numarasıyla arama</p>
+      <div class="step"><b>Öğrenci Excel dosyası</b>
+        <input type="file" id="sFile" accept=".xlsx,.xls,.csv,.xlsm"><div class="info" id="sInfo"></div><div class="info" id="sStatus"></div></div>
+      <div class="step"><b>Dosyaya neler girsin?</b>
+        <label class="opt"><input type="checkbox" id="sName" checked><span>Öğrenci adı ve soyadı<small>Kapatırsanız yalnızca numara görünür.</small></span></label>
+        <label class="opt"><input type="checkbox" id="sProg" checked><span>Program ve dönem bilgisi</span></label>
+        <label class="opt"><input type="checkbox" id="sHoca" checked><span>Derslerin öğretim elemanları<small>Ders kodu ve şubeye göre öğretim elemanı Excel'inden eşleştirilir; o dosya yüklenmezse eklenmez.</small></span></label>
+        <label class="opt"><input type="checkbox" id="sSinif" checked><span>Bölüm ve sınıf seçimi<small>Seçilen bölüm ve sınıfın haftalık programını gösterir. Müfredat dersleri öğretim elemanı Excel'inden, sınıftaki öğrencilerin kayıtlı olduğu dersler öğrenci Excel'inin "Sınıf" sütunundan alınır. İki dosyadan biri yeterlidir.</small></span></label>
+        <p class="note">AGNO, ANO, fakülte ve arşiv durumu hiçbir zaman eklenmez. Numara önerme listesi yoktur.</p></div>
+    </section>
+
+    <section class="card">
+      <h2>Öğretim elemanı</h2>
+      <p class="sub">Ad veya soyadla arama</p>
+      <div class="step"><b>Öğretim elemanı Excel dosyası</b>
+        <input type="file" id="hFile" accept=".xlsx,.xls,.csv,.xlsm"><div class="info" id="hInfo"></div><div class="info" id="hStatus"></div></div>
+      <div class="step"><b>Dosyaya neler girsin?</b>
+        <label class="opt"><input type="checkbox" id="hTab" checked><span>Öğretim elemanı sekmesi<small>Kapatırsanız bu Excel yalnızca bölüm ve sınıf seçimi için kullanılır.</small></span></label>
+        <label class="opt"><input type="checkbox" id="hCount" checked><span>Dersi alan öğrenci sayısı ve derslik kontenjanı</span></label>
+        <label class="opt"><input type="checkbox" id="hRoster" checked><span>Dersi alan öğrencilerin listesi<small>Öğretim elemanı ve sınıf programlarında öğrenci sayısına tıklayınca liste açılır. Öğrenci Excel'inden ders kodu ve şubeye göre eşleştirilir; o dosya yüklenmezse eklenmez. Adlar, öğrenci bölümündeki "ad ve soyad" seçimine uyar.</small></span></label>
+        <p class="note">T.C. kimlik numaraları hiçbir zaman eklenmez.</p></div>
+    </section>
+  </div>
+
+  <section class="card" style="margin-top:16px">
+    <h2>Yoklama</h2>
+    <p class="sub">Öğrenci programının altında haftalık devam durumu</p>
+    <div class="step"><b>Yoklama Excel dosyası</b>
+      <input type="file" id="aFile" accept=".xlsx,.xls,.csv,.xlsm"><div class="info" id="aInfo"></div><div class="info" id="aStatus"></div></div>
+    <p class="note">Öğrenci numarası ve "Ders Har. ID" ile öğrenci Excel'indeki derslere bağlanır; ID eşleşmezse ders adına bakılır. Öğrenci Excel'inde olmayan öğrenciler de numarayla aranabilir. Ad gösterimi öğrenci bölümündeki seçime uyar.</p>
+  </section>
+
+  <section class="card" style="margin-top:16px">
+    <div class="step"><b>Sayfa başlığı (Türkçe)</b><input type="text" id="title" value="Haftalık Ders Programı"></div>
+    <div class="step"><b>Sayfa başlığı (İngilizce)</b><input type="text" id="titleEn" value="Weekly Course Schedule"></div>
+    <button class="btn" id="build" disabled>Paylaşılabilir dosyayı oluştur</button>
+    <div class="status" id="status"></div>
+  </section>
+
+</div>
+
+<template id="viewer">
+<style>
+:root{--bg:#E9EDF3;--surface:#fff;--ink:#18223A;--muted:#5C6780;--line:#D3DAE5;--accent:#2F4FD8;--hover:#EEF2FB;--warn:#B42318;--warn-bg:#FDECEA;
+--c0:#DCE6FF;--c0b:#2F4FD8;--c1:#D8F3E6;--c1b:#16875A;--c2:#FFE9CC;--c2b:#B7650B;--c3:#F6DDF3;--c3b:#A0328F;--c4:#DDF1F7;--c4b:#127191;--c5:#EEE6FF;--c5b:#6A3FC8;--c6:#FFE0DB;--c6b:#C2412D;--c7:#EAF2D2;--c7b:#5E7A12}
+@media (prefers-color-scheme:dark){:root{--bg:#10151F;--surface:#18202E;--ink:#E7ECF5;--muted:#9AA5BB;--line:#2A3446;--accent:#7C95FF;--hover:#222C3E;--warn:#FF8A7A;--warn-bg:#3A1C1A;
+--c0:#23304F;--c0b:#8EA6FF;--c1:#1C3A2F;--c1b:#62D39F;--c2:#3D2E1B;--c2b:#F2B35E;--c3:#3A2238;--c3b:#EE92DF;--c4:#1B3440;--c4b:#6CCBEA;--c5:#2C2448;--c5b:#B79CFF;--c6:#40241F;--c6b:#FF9C87;--c7:#2D3620;--c7b:#B7D66A}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:15px;line-height:1.5}
+.wrap{max-width:1180px;margin:0 auto;padding:28px 20px 60px}
+.top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+h1{font-size:clamp(24px,4vw,34px);font-weight:800;letter-spacing:-.02em;margin:0 0 16px}
+.upd{margin:-12px 0 16px;color:var(--muted);font-size:13px}
+.tabs{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:4px;gap:4px;margin:0 12px 14px 0;vertical-align:top}
+.tabs button{font:inherit;font-weight:700;border:0;background:none;color:var(--muted);padding:8px 16px;border-radius:8px;cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--accent);color:#fff}
+.tabs.small{border-radius:9px;padding:3px}
+.tabs.small button{font-size:14px;padding:6px 12px;border-radius:7px}
+.tabs.small button[aria-selected="true"]{background:var(--hover);color:var(--ink)}
+.tabs.lang{margin:4px 0 0;flex:none}
+.tabs.lang button{font-size:13px;padding:5px 10px}
+.tabs button:focus-visible,.btn:focus-visible,.search input:focus-visible,.sel select:focus-visible,.sug button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.searchbox{position:relative;max-width:520px;margin-bottom:20px}
+.search{display:flex;gap:8px}
+.search input{flex:1;min-width:0;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink)}
+.sel{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.sel select{font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink);min-width:0;max-width:100%}
+.sel select#prog{flex:1 1 260px;max-width:420px}
+.chk{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);cursor:pointer;flex-basis:100%}
+.chk input{width:16px;height:16px;accent-color:var(--accent)}
+.btn{font:inherit;font-weight:700;border:0;border-radius:9px;padding:10px 16px;background:var(--accent);color:#fff;cursor:pointer;white-space:nowrap}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.sug{position:absolute;left:0;right:0;top:calc(100% + 4px);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:4px;z-index:5;max-height:320px;overflow:auto;box-shadow:0 8px 24px rgba(20,30,60,.12)}
+.sug button{display:block;width:100%;text-align:left;font:inherit;background:none;border:0;color:var(--ink);padding:8px 10px;border-radius:7px;cursor:pointer}
+.sug button:hover,.sug button.act{background:var(--hover)}
+.msg{margin:0 0 18px;padding:12px 14px;border-radius:10px;background:var(--warn-bg);color:var(--warn);font-weight:600}
+.hidden{display:none!important}
+.person{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;margin-bottom:16px}
+.person h2{margin:0;font-size:22px;font-weight:800}
+.person p{margin:2px 0 0;color:var(--muted)}
+.stats{display:flex;gap:22px}.stats div{font-size:13px;color:var(--muted)}.stats b{display:block;font-size:20px;color:var(--ink)}
+.box{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+.tt{display:grid;min-width:760px}
+.head{border-bottom:1px solid var(--line);padding:10px 8px;font-weight:700;font-size:14px;text-align:center}
+.timecol{border-right:1px solid var(--line);position:relative}
+.hour{position:absolute;right:8px;font-size:12px;color:var(--muted);transform:translateY(-50%)}
+.day{position:relative;border-right:1px solid var(--line)}.day:last-child{border-right:0}
+.gl{position:absolute;left:0;right:0;border-top:1px solid var(--line);opacity:.6}
+.blk{position:absolute;border-radius:8px;padding:6px 8px;overflow:hidden;border-left:4px solid;font-size:12.5px;line-height:1.3;overflow-wrap:anywhere;hyphens:auto}
+.blk:hover,.blk:focus-within{height:auto!important;min-height:var(--h);overflow:visible;z-index:4;box-shadow:0 6px 18px rgba(20,30,60,.22)}
+.blk:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.blk b{font-size:13px}.blk .n{font-weight:600}.blk .m{opacity:.85;margin-top:3px}
+.blk.nw{padding:5px 6px;font-size:11.5px}
+.blk.cf{outline:2px solid var(--warn);outline-offset:-1px}
+h3{font-size:17px;margin:22px 0 10px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:top}
+th{color:var(--muted);font-size:13px}tr:last-child td{border-bottom:0}
+.sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:8px}
+.hl{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:2px;text-decoration-thickness:1px;text-align:left}
+.hl:hover{color:var(--accent)}
+.hl:focus-visible{outline:2px solid var(--accent);outline-offset:1px;border-radius:3px}
+.back{margin:0 0 14px}
+.back button{font:inherit;font-weight:600;background:none;border:0;color:var(--accent);padding:0;cursor:pointer}
+.ov{position:fixed;inset:0;background:rgba(10,15,30,.5);display:flex;align-items:flex-start;justify-content:center;padding:5vh 16px;z-index:20}
+.modal{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:14px;width:100%;max-width:780px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 50px rgba(10,15,30,.3)}
+.mh{display:flex;justify-content:space-between;gap:12px;padding:18px 20px 8px}
+.mh h2{margin:0;font-size:19px;font-weight:800}
+.mh p{margin:2px 0 0;color:var(--muted);font-size:14px}
+.x{font:inherit;font-size:22px;line-height:1;background:none;border:0;color:var(--muted);cursor:pointer;padding:4px 8px;border-radius:7px;height:fit-content}
+.x:hover{background:var(--hover);color:var(--ink)}
+.mtools{display:flex;gap:8px;padding:8px 20px 12px}
+.mtools input{flex:1;min-width:0;font:inherit;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink)}
+.mb{overflow:auto;border-top:1px solid var(--line)}
+.mb th{position:sticky;top:0;background:var(--surface)}
+.mb td.r{color:var(--muted);font-variant-numeric:tabular-nums}
+.x:focus-visible,.mtools input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+body.mo{overflow:hidden}
+.att th,.att td{text-align:center;padding:8px 6px}
+.att th:first-child,.att td:first-child{text-align:left;padding-left:12px;white-space:normal;min-width:180px}
+.att td.sum{font-weight:700;font-variant-numeric:tabular-nums;padding-right:12px}
+.ac{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:7px;font-weight:800;font-size:13px}
+.ac.V{background:var(--c1);color:var(--c1b)}
+.ac.Y{background:var(--c6);color:var(--c6b)}
+.ac.O{background:var(--c2);color:var(--c2b)}
+.ac.N{color:var(--muted);opacity:.6}
+.leg{display:flex;flex-wrap:wrap;gap:6px 16px;margin:10px 2px 0;color:var(--muted);font-size:13px;align-items:center}
+.leg .ac{width:20px;height:20px;font-size:11px;margin-right:6px}
+@media print{.searchbox,.sel,.tabs,.back,h1,.pr{display:none!important}.tt{min-width:0!important}
+  body.mo>.wrap,body.mo .mtools,body.mo .x{display:none!important}
+  body.mo .ov{position:static;background:none;padding:0}body.mo .modal{max-height:none;box-shadow:none;border:0}body.mo .mb{overflow:visible}}
+</style>
+<div class="wrap">
+  <div class="top">
+    <div><h1 id="ttl"></h1><p class="upd hidden" id="upd"></p></div>
+    <div class="tabs small lang" id="lang" role="group" aria-label="Dil / Language">
+      <button type="button" data-l="tr">TR</button>
+      <button type="button" data-l="en">EN</button>
+    </div>
+  </div>
+  <div class="tabs" id="tabs" role="tablist">
+    <button type="button" role="tab" data-t="ogr" data-i="tabOgr"></button>
+    <button type="button" role="tab" data-t="hoca" data-i="tabHoca"></button>
+  </div>
+  <div class="tabs small" id="subtabs" role="tablist">
+    <button type="button" role="tab" data-m="ogrenci" data-i="subNum"></button>
+    <button type="button" role="tab" data-m="sinif" data-i="subSin"></button>
+  </div>
+  <div class="searchbox" id="numbox">
+    <div class="search"><input id="q" autocomplete="off"><button class="btn" id="go" data-i="go"></button></div>
+    <div class="sug hidden" id="sug" role="listbox"></div>
+  </div>
+  <div class="sel hidden" id="selbox">
+    <select id="prog"></select>
+    <select id="sin"></select>
+    <label class="chk hidden" id="minorBox"><input type="checkbox" id="minor"><span id="minorL"></span></label>
+  </div>
+  <p class="back hidden" id="back"><button type="button" id="backBtn"></button></p>
+  <p class="msg hidden" id="msg"></p>
+  <div id="res" class="hidden">
+    <div class="person"><div><h2 id="pN"></h2><p id="pI"></p></div>
+      <div class="stats" id="stats"></div>
+      <button class="btn ghost pr" data-i="print"></button></div>
+    <div class="box"><div class="tt" id="tt"></div></div>
+    <h3 data-i="list"></h3>
+    <div class="box"><table id="tbl"></table></div>
+    <div id="attWrap" class="hidden">
+      <h3 data-i="attT"></h3>
+      <div class="box"><table class="att" id="att"></table></div>
+      <div class="leg" id="leg"></div>
+    </div>
+  </div>
+</div>
+<div class="ov hidden" id="ov">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="moT">
+    <div class="mh"><div><h2 id="moT"></h2><p id="moS"></p></div><button type="button" class="x" id="moX">×</button></div>
+    <div class="mtools"><input id="moQ" autocomplete="off"><button type="button" class="btn ghost" id="moP"></button></div>
+    <div class="mb"><table id="moTbl"></table></div>
+  </div>
+</div>
+<script>
+var DATA = __DATA__;
+var TX={
+tr:{days:["Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi","Pazar"],tabOgr:"Öğrenci",tabHoca:"Öğretim elemanı",subNum:"Numarayla",subSin:"Bölüm ve sınıfla",
+ phNum:"Öğrenci numaranız",phHoca:"Ad veya soyad yazın",go:"Programı göster",print:"Yazdır",list:"Ders listesi",attT:"Devam durumu",
+ a:{course:"Ders",wk:"H",week:"Hafta",abs:"Devamsızlık",V:"Var",Y:"Yok",N:"Yoklama açılmadı",other:"Diğer",of:function(y,t){return y+" / "+t},tip:"Yoklama alınan haftalarda gelmediği hafta sayısı"},selProg:"Bölüm seçin",prog:"Bölüm",sin:"Sınıf",
+ year:function(s){return/^\d+$/.test(s)?s+". sınıf":s},
+ c:{code:"Kod",course:"Ders",sec:"Şube",year:"Sınıf",type:"Türü",tul:"T-U-L",cr:"Kredi",ects:"AKTS",stu:"Öğrenci",prog:"Program",times:"Saatler",inst:"Öğretim elemanı"},
+ s:{courses:"ders",cr:"kredi",ects:"AKTS",hrs:"saat/hafta",stu:"öğrenci",comp:"zorunlu",elec:"seçmeli"},
+ sb:"Şb",prac:"(Uyg.)",elec:"Seçmeli",comp:"Zorunlu",nStu:" öğrenci",noTime:"Saat bilgisi yok",open:" ders programını aç",
+ backStu:"← Öğrenci programına dön",backSin:"← Sınıf programına dön",backHoca:"← Öğretim elemanı programına dön",
+ minor:function(n){return"Sınıfın az öğrencisinin aldığı "+n+" dersi de göster"},minorTip:"Bu sınıfın müfredatında olmayan ve sınıftan az öğrencinin (%10'dan az) aldığı dersler: alttan, üstten, ÇAP, yandal vb.",clsN:"Bu sınıftan dersi alan öğrenci sayısı",
+ r:{title:"Dersi alan öğrenciler",sec:"Şube",n:function(n){return"Listede "+n+" öğrenci"},diff:function(n){return" (sistemdeki sayı: "+n+")"},
+   filter:"Numara veya adla filtrele",no:"Öğrenci No",name:"Ad Soyad",prog:"Program",why:"Kayıt nedeni",close:"Kapat",open:"Öğrenci listesini aç",stu:"Ders programını aç",none:"Eşleşen öğrenci yok."},
+ m:{emptyHoca:"Bir ad veya soyad yazın.",emptyNum:"Öğrenci numaranızı girin.",nfHoca:function(t){return"“"+t+"” ile eşleşen öğretim elemanı bulunamadı."},
+   nfNum:function(t){return"“"+t+"” numaralı öğrenci bulunamadı."},multi:function(n){return n+" kişi eşleşti. Listeden seçin."},conflict:"Dikkat: programda çakışan dersler var (kırmızı çerçeveli bloklar)."}},
+en:{days:["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],tabOgr:"Student",tabHoca:"Instructor",subNum:"By student number",subSin:"By department & year",
+ phNum:"Your student number",phHoca:"Type a first or last name",go:"Show schedule",print:"Print",list:"Course list",attT:"Attendance",
+ a:{course:"Course",wk:"W",week:"Week",abs:"Absences",V:"Present",Y:"Absent",N:"Not taken",other:"Other",of:function(y,t){return y+" / "+t},tip:"Weeks absent out of weeks attendance was taken"},selProg:"Select department",prog:"Department",sin:"Year",
+ year:function(s){return/^\d+$/.test(s)?"Year "+s:s},
+ c:{code:"Code",course:"Course",sec:"Section",year:"Year",type:"Type",tul:"T-P-L",cr:"Credits",ects:"ECTS",stu:"Students",prog:"Program",times:"Times",inst:"Instructor"},
+ s:{courses:"courses",cr:"credits",ects:"ECTS",hrs:"hours/week",stu:"students",comp:"compulsory",elec:"elective"},
+ sb:"Sec.",prac:"(Practice)",elec:"Elective",comp:"Compulsory",nStu:" students",noTime:"No time information",open:" — open schedule",
+ backStu:"← Back to student schedule",backSin:"← Back to class schedule",backHoca:"← Back to instructor schedule",
+ minor:function(n){return"Also show "+n+(n===1?" course":" courses")+" taken by few students in this class"},minorTip:"Courses outside this year's curriculum taken by under 10% of the class: repeats, courses ahead, double major, minor, etc.",clsN:"Students from this class taking the course",
+ r:{title:"Enrolled students",sec:"Section",n:function(n){return n+(n===1?" student":" students")+" listed"},diff:function(n){return" (system count: "+n+")"},
+   filter:"Filter by number or name",no:"Student No",name:"Name",prog:"Program",why:"Enrollment type",close:"Close",open:"Open student list",stu:"Open schedule",none:"No matching students."},
+ m:{emptyHoca:"Please type a name.",emptyNum:"Please enter your student number.",nfHoca:function(t){return"No instructor matches “"+t+"”."},
+   nfNum:function(t){return"No student found with number “"+t+"”."},multi:function(n){return n+" people match. Pick one from the list."},conflict:"Note: this schedule has overlapping classes (blocks with a red border)."}}};
+var LANG="tr",L=TX.tr;
+try{var sv=localStorage.getItem("dp-lang");if(sv==="en"||sv==="tr")LANG=sv}catch(e){}
+var MODE="",D=null,STATE={},lastOgr="",CUR=null,MSG=null,backTo="";
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function norm(s){return String(s==null?"":s).toLocaleLowerCase("tr").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ı/g,"i").replace(/\s+/g," ").trim()}
+function fmt(m){return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0")}
+function isElec(t){return/se[cç]meli/i.test(t||"")}function isComp(t){return/zorunlu/i.test(t||"")}
+function tur(t){return isComp(t)?L.comp:isElec(t)?L.elec:t}
+var q=$("q"),sug=$("sug"),act=-1,hits=[];
+var hasOgr=!!(DATA.ogrenci||DATA.sinif);
+[].forEach.call($("tabs").children,function(b){
+  if(b.dataset.t==="ogr"?!hasOgr:!DATA.hoca)b.classList.add("hidden");
+  b.onclick=function(){setMode(b.dataset.t==="hoca"?"hoca":(lastOgr||(DATA.ogrenci?"ogrenci":"sinif")))}});
+if(!(hasOgr&&DATA.hoca))$("tabs").classList.add("hidden");
+[].forEach.call($("subtabs").children,function(b){b.onclick=function(){setMode(b.dataset.m)}});
+[].forEach.call($("lang").children,function(b){b.onclick=function(){setLang(b.dataset.l)}});
+
+function msg(key,arg){MSG=key?[key,arg]:null;var m=$("msg");if(!key){m.classList.add("hidden");return}
+  var v=L.m[key];m.textContent=typeof v==="function"?v(arg):v;m.classList.remove("hidden")}
+
+function applyLang(){
+  L=TX[LANG];document.documentElement.lang=LANG;
+  var t=LANG==="en"&&DATA.titleEn?DATA.titleEn:DATA.title;$("ttl").textContent=t;document.title=t;
+  if(DATA.updated){var ud=new Date(DATA.updated);if(!isNaN(ud)){var u=$("upd");u.textContent=(LANG==="en"?"Last updated: ":"Son güncelleme: ")+ud.toLocaleString(LANG==="en"?"en-GB":"tr-TR",{day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"});u.classList.remove("hidden")}}
+  [].forEach.call(document.querySelectorAll("[data-i]"),function(e){e.textContent=L[e.dataset.i]});
+  [].forEach.call($("lang").children,function(b){b.setAttribute("aria-pressed",b.dataset.l===LANG);b.setAttribute("aria-selected",b.dataset.l===LANG)});
+  q.placeholder=MODE==="hoca"?L.phHoca:L.phNum;
+  $("prog").setAttribute("aria-label",L.prog);$("sin").setAttribute("aria-label",L.sin);
+  if(DATA.sinif){var pv=$("prog").value,sv=$("sin").value;fillProg();$("prog").value=pv;if(pv){fillSin(pv);$("sin").value=sv}
+    if(pv&&sv&&DATA.sinif[pv][sv]){var nm=DATA.sinif[pv][sv].courses.filter(function(c){return isMinor(c,DATA.sinif[pv][sv].N)}).length;$("minorL").textContent=L.minor(nm);$("minorBox").title=L.minorTip}}
+  $("backBtn").textContent=backLabel(backTo);
+  if(CUR)render(CUR.p,CUR.kind,CUR.no,true);
+  if(RC)drawRoster();
+  if(MSG)msg(MSG[0],MSG[1]);
+  sug.classList.add("hidden");
+}
+function setLang(l){LANG=l;try{localStorage.setItem("dp-lang",l)}catch(e){}applyLang()}
+
+// Bölüm / sınıf seçimleri
+function fillProg(){var progs=Object.keys(DATA.sinif).sort(function(a,b){return a.localeCompare(b,"tr")});
+  $("prog").innerHTML='<option value="">'+esc(L.selProg)+'</option>'+progs.map(function(p){return'<option>'+esc(p)+'</option>'}).join("")}
+function fillSin(p){var ss=Object.keys(DATA.sinif[p]).sort(function(a,b){return(+a||99)-(+b||99)||a.localeCompare(b,"tr")});
+  $("sin").innerHTML=ss.map(function(s){return'<option value="'+esc(s)+'">'+esc(L.year(s))+'</option>'}).join("")}
+if(DATA.sinif){
+  fillProg();
+  $("prog").onchange=function(){var p=this.value;msg("");
+    if(!p){$("sin").innerHTML="";CUR=null;$("res").classList.add("hidden");return}
+    fillSin(p);showSinif()};
+  $("sin").onchange=showSinif;
+}
+function isMinor(c,N){return N&&!c.m&&c.n<Math.max(2,Math.ceil(N*0.1))}
+function sinView(P){
+  var all=$("minor").checked,keep=[],map={},hidden=0;
+  P.courses.forEach(function(c,i){if(!all&&isMinor(c,P.N)){hidden++;return}map[i]=keep.length;keep.push(c)});
+  var nm=P.courses.filter(function(c){return isMinor(c,P.N)}).length;
+  $("minorBox").classList.toggle("hidden",!nm);$("minorL").textContent=L.minor(nm);$("minorBox").title=L.minorTip;
+  return{prog:P.prog,sin:P.sin,info:P.info,N:P.N,hours:P.hours,courses:keep,
+    blocks:P.blocks.filter(function(b){return map[b.c]!==undefined}).map(function(b){var o={};for(var k in b)o[k]=b[k];o.c=map[b.c];return o})}}
+function showSinif(){var p=$("prog").value,s=$("sin").value;msg("");
+  if(p&&s&&DATA.sinif[p][s])render(sinView(DATA.sinif[p][s]),"sinif","");else $("minorBox").classList.add("hidden")}
+$("minor").addEventListener("change",showSinif);
+
+function setMode(m){
+  $("back").classList.add("hidden");
+  if(MODE)STATE[MODE]={q:q.value,prog:$("prog").value,sin:$("sin").value,cur:CUR,msg:MSG};
+  MODE=m;if(m!=="hoca")lastOgr=m;D=m==="sinif"?null:DATA[m];
+  [].forEach.call($("tabs").children,function(b){b.setAttribute("aria-selected",(b.dataset.t==="hoca")===(m==="hoca"))});
+  [].forEach.call($("subtabs").children,function(b){b.setAttribute("aria-selected",b.dataset.m===m)});
+  $("subtabs").classList.toggle("hidden",m==="hoca"||!(DATA.ogrenci&&DATA.sinif));
+  $("numbox").classList.toggle("hidden",m==="sinif");$("selbox").classList.toggle("hidden",m!=="sinif");
+  q.placeholder=m==="hoca"?L.phHoca:L.phNum;sug.classList.add("hidden");
+  var st=STATE[m]||{};q.value=m!=="sinif"&&st.q?st.q:"";
+  if(m==="sinif"&&DATA.sinif){$("prog").value=st.prog||"";if(st.prog){fillSin(st.prog);$("sin").value=st.sin}else $("sin").innerHTML=""}
+  CUR=null;$("res").classList.add("hidden");
+  if(st.cur)render(st.cur.p,st.cur.kind,st.cur.no,true);
+  if(st.msg)msg(st.msg[0],st.msg[1]);else msg("");
+}
+
+function search(t){var w=norm(t).split(" ").filter(Boolean);if(!w.length)return[];
+  return D.list.filter(function(p){return w.every(function(x){return p.s.indexOf(x)>-1})})}
+function drawSug(){if(MODE!=="hoca")return;hits=search(q.value).slice(0,12);act=-1;
+  if(!hits.length||!q.value.trim()){sug.classList.add("hidden");return}
+  sug.innerHTML=hits.map(function(p,i){return'<button type="button" data-i2="'+i+'">'+esc(p.label)+'</button>'}).join("");sug.classList.remove("hidden")}
+sug.addEventListener("mousedown",function(e){var b=e.target.closest("button");if(b){e.preventDefault();pick(hits[+b.dataset.i2])}});
+q.addEventListener("input",drawSug);
+q.addEventListener("blur",function(){setTimeout(function(){sug.classList.add("hidden")},100)});
+q.addEventListener("keydown",function(e){
+  if(MODE==="hoca"&&!sug.classList.contains("hidden")&&(e.key==="ArrowDown"||e.key==="ArrowUp")){e.preventDefault();
+    act=(act+(e.key==="ArrowDown"?1:-1)+hits.length)%hits.length;
+    [].forEach.call(sug.children,function(c,i){c.classList.toggle("act",i===act)});return}
+  if(e.key==="Escape")sug.classList.add("hidden");
+  if(e.key==="Enter"){e.preventDefault();if(MODE==="hoca"&&act>-1)pick(hits[act]);else go()}});
+$("go").onclick=go;
+function hide(){CUR=null;$("res").classList.add("hidden")}
+function go(){msg("");var t=q.value.trim(),H=MODE==="hoca";
+  if(!t){msg(H?"emptyHoca":"emptyNum");return}
+  if(H){var h=search(t);
+    if(h.length===1)return pick(h[0]);
+    if(!h.length){msg("nfHoca",t);hide();return}
+    drawSug();q.focus();msg("multi",h.length);return}
+  var no=t.toLocaleUpperCase("tr"),p=D.people[no];
+  if(!p){msg("nfNum",t);hide();return}
+  render(p,"ogrenci",no)}
+function pick(it){sug.classList.add("hidden");q.value=it.label;msg("");render(D.people[it.k],"hoca","")}
+
+function hl(c,sep){if(!c.hn)return"";return c.hn.map(function(n,i){var k=c.hk&&c.hk[i];
+  return DATA.hoca&&k&&DATA.hoca.people[k]?'<button type="button" class="hl" data-k="'+esc(k)+'" title="'+esc(n+L.open)+'">'+esc(n)+'</button>':esc(n)}).join(sep||", ")}
+$("res").addEventListener("click",function(e){var b=e.target.closest(".hl[data-k]");if(!b)return;
+  var from=MODE,p=DATA.hoca.people[b.dataset.k];
+  setMode("hoca");q.value=p.name;msg("");render(p,"hoca","");
+  showBack(from);
+  try{window.scrollTo(0,0)}catch(e){}});
+function backLabel(m){return m==="sinif"?L.backSin:m==="hoca"?L.backHoca:L.backStu}
+function showBack(from){backTo=from;$("backBtn").textContent=backLabel(from);$("back").classList.remove("hidden")}
+$("backBtn").onclick=function(){var m=backTo;backTo="";$("back").classList.add("hidden");setMode(m)};
+
+function rosterFor(c){if(c.st)return c.st.map(function(n){return[n]});var R=DATA.roster;if(!R||!DATA.ogrenci)return null;
+  var k=c.code+"|"+c.sube;if(R[k])return R[k];
+  var ks=Object.keys(R).filter(function(x){return x.indexOf(c.code+"|")===0});return ks.length===1?R[ks[0]]:null}
+function cntS(c,ci,suffix){if(c.n==null)return"";var t=esc(c.n)+(suffix||"");
+  return c.st&&DATA.ogrenci?'<button type="button" class="hl cnt" data-ci="'+ci+'" title="'+esc(L.clsN+" · "+L.r.open)+'">'+t+'</button>':'<span title="'+esc(L.clsN)+'">'+t+'</span>'}
+function cnt(c,ci,suffix){var R=rosterFor(c),n=c.ogr!==""&&c.ogr!=null?c.ogr:(R?R.length:"");
+  if(n==="")return"";var t=esc(n)+(suffix||"");
+  return R?'<button type="button" class="hl cnt" data-ci="'+ci+'" title="'+esc(L.r.open)+'">'+t+'</button>':t}
+var RC=null;
+function openRoster(c){RC=c;$("moQ").value="";drawRoster();$("ov").classList.remove("hidden");document.body.classList.add("mo");$("moQ").focus()}
+function closeRoster(){RC=null;$("ov").classList.add("hidden");document.body.classList.remove("mo")}
+function drawRoster(){var c=RC,R=rosterFor(c)||[],P=DATA.ogrenci.people,f=norm($("moQ").value).split(" ").filter(Boolean);
+  $("moT").textContent=c.code+" "+c.name;
+  var cls=c.st&&CUR&&CUR.kind==="sinif"?" · "+CUR.p.prog+", "+L.year(CUR.p.sin):"";
+  $("moS").textContent=L.r.sec+" "+c.sube+" · "+L.r.n(R.length)+(c.ogr!==""&&c.ogr!=null&&+c.ogr!==R.length?L.r.diff(c.ogr):"")+cls;
+  $("moQ").placeholder=L.r.filter;$("moP").textContent=L.print;$("moX").setAttribute("aria-label",L.r.close);$("moX").title=L.r.close;
+  var hasName=R.some(function(e){return P[e[0]]&&P[e[0]].name}),hasProg=R.some(function(e){return P[e[0]]&&P[e[0]].info&&P[e[0]].info[0]}),hasWhy=R.some(function(e){return e[1]});
+  var h="<tr><th>#</th><th>"+L.r.no+"</th>"+(hasName?"<th>"+L.r.name+"</th>":"")+(hasProg?"<th>"+L.r.prog+"</th>":"")+(hasWhy?"<th>"+L.r.why+"</th>":"")+"</tr>",shown=0;
+  R.forEach(function(e,i){var s=P[e[0]]||{},nm=s.name||"",pr=s.info&&s.info[0]||"";
+    if(f.length&&!f.every(function(w){return norm(e[0]+" "+nm).indexOf(w)>-1}))return;shown++;
+    h+='<tr><td class="r">'+(i+1)+'</td><td>'+(P[e[0]]?'<button type="button" class="hl stl" data-no="'+esc(e[0])+'" title="'+esc(L.r.stu)+'">'+esc(e[0])+'</button>':esc(e[0]))+'</td>'+
+      (hasName?'<td>'+esc(nm)+'</td>':'')+(hasProg?'<td>'+esc(pr)+'</td>':'')+(hasWhy?'<td>'+esc(e[1]||"")+'</td>':'')+'</tr>'});
+  if(!shown)h+='<tr><td colspan="5" class="r">'+esc(L.r.none)+'</td></tr>';
+  $("moTbl").innerHTML=h}
+$("moQ").addEventListener("input",drawRoster);
+$("moX").onclick=closeRoster;$("moP").onclick=function(){print()};
+$("ov").addEventListener("mousedown",function(e){if(e.target===this)closeRoster()});
+document.addEventListener("keydown",function(e){if(e.key==="Escape"&&RC)closeRoster()});
+$("moTbl").addEventListener("click",function(e){var b=e.target.closest(".stl");if(!b)return;
+  var no=b.dataset.no,from=MODE;closeRoster();
+  setMode("ogrenci");q.value=no;msg("");render(DATA.ogrenci.people[no],"ogrenci",no);showBack(from);try{window.scrollTo(0,0)}catch(e){}});
+$("res").addEventListener("click",function(e){var b=e.target.closest(".cnt");if(b&&CUR)openRoster(CUR.p.courses[+b.dataset.ci])});
+function lanes(list){
+  list.sort(function(x,y){return x.a-y.a||y.b-x.b});
+  var cl=[],ends=[],cEnd=-1;
+  function close(){cl.forEach(function(b){b.n=ends.length});cl=[];ends=[]}
+  list.forEach(function(b){
+    if(b.a>=cEnd)close();
+    var i=ends.findIndex(function(e){return e<=b.a});if(i<0){i=ends.length;ends.push(0)}
+    ends[i]=b.b;b.l=i;cl.push(b);cEnd=Math.max(cEnd,b.b)});
+  close();
+}
+function renderAtt(p,kind){
+  var W=$("attWrap");if(kind!=="ogrenci"||!p.att||!p.att.length){W.classList.add("hidden");return}
+  var A=L.a,n=DATA.weeks||0,others={};
+  p.att.forEach(function(r){n=Math.max(n,r.w.length)});
+  var h="<tr><th>"+A.course+"</th>";for(var i=1;i<=n;i++)h+='<th title="'+A.week+" "+i+'">'+A.wk+i+"</th>";
+  h+='<th title="'+esc(A.tip)+'">'+A.abs+"</th></tr>";
+  p.att.forEach(function(r){var c=r.c!=null?p.courses[r.c]:null,y=0,t=0;
+    var label=c?'<span class="sw" style="background:var(--c'+(r.c%8)+'b)"></span>'+esc(c.code)+" "+esc(c.name):esc(r.n);
+    h+="<tr><td>"+label+"</td>";
+    for(var i=0;i<n;i++){var v=r.w[i]||"",cls,txt,tip;
+      if(v==="V"){cls="V";txt="✓";tip=A.V;t++}
+      else if(v==="Y"){cls="Y";txt="✗";tip=A.Y;t++;y++}
+      else if(!v){cls="N";txt="·";tip=A.N}
+      else{cls="O";txt=esc(v.charAt(0).toLocaleUpperCase("tr"));tip=v;others[v]=1;t++}
+      h+='<td><span class="ac '+cls+'" title="'+esc(A.week+" "+(i+1)+": "+tip)+'">'+txt+"</span></td>"}
+    h+='<td class="sum">'+(t?A.of(y,t):"–")+"</td></tr>"});
+  $("att").innerHTML=h;
+  var lg='<span><span class="ac V">✓</span>'+A.V+'</span><span><span class="ac Y">✗</span>'+A.Y+'</span><span><span class="ac N">·</span>'+A.N+'</span>';
+  Object.keys(others).forEach(function(o){lg+='<span><span class="ac O">'+esc(o.charAt(0).toLocaleUpperCase("tr"))+'</span>'+esc(o)+'</span>'});
+  $("leg").innerHTML=lg;W.classList.remove("hidden");
+}
+function render(p,kind,no,quiet){
+  CUR={p:p,kind:kind,no:no};
+  var HOCA=kind==="hoca",SIN=kind==="sinif",DAYS=L.days;
+  $("pN").textContent=SIN?p.prog+", "+L.year(p.sin):(p.name||no);
+  $("pI").textContent=[no].concat(p.info||[]).filter(Boolean).join(", ");
+  var bl=p.blocks.map(function(b){var o={};for(var k in b)o[k]=b[k];return o});
+  bl.forEach(function(x){x.cf=!SIN&&bl.some(function(y){return y!==x&&y.d===x.d&&y.a<x.b&&x.a<y.b&&!(HOCA&&y.r&&y.r===x.r)})});
+  var used={};bl.forEach(function(b){used[b.d]=1});var days=[0,1,2,3,4].concat([5,6].filter(function(d){return used[d]}));
+  var st=540,en=1020;bl.forEach(function(b){st=Math.min(st,Math.floor(b.a/60)*60);en=Math.max(en,Math.ceil(b.b/60)*60)});
+  var lane={};days.forEach(function(d){var db=bl.filter(function(b){return b.d===d});lanes(db);lane[d]=db.reduce(function(m,b){return Math.max(m,b.n)},1)});
+  var P=1.5,H=(en-st)*P,tt=$("tt"),LW=SIN?160:140;
+  tt.style.gridTemplateColumns="56px "+days.map(function(d){return"minmax("+(lane[d]*LW)+"px,"+lane[d]+"fr)"}).join(" ");
+  tt.style.minWidth=(56+days.reduce(function(t,d){return t+lane[d]*LW},0))+"px";
+  var h='<div class="head"></div>'+days.map(function(d){return'<div class="head">'+DAYS[d]+'</div>'}).join(""),hr="",ln="";
+  for(var t=st;t<=en;t+=60){var y=(t-st)*P;if(t<en)hr+='<span class="hour" style="top:'+(t===st?10:y)+'px">'+fmt(t)+'</span>';ln+='<div class="gl" style="top:'+y+'px"></div>'}
+  h+='<div class="timecol" style="height:'+H+'px">'+hr+'</div>';
+  days.forEach(function(d){var db=bl.filter(function(b){return b.d===d});
+    h+='<div class="day" style="height:'+H+'px">'+ln+db.map(function(b){var c=p.courses[b.c],i=b.c%8;
+      var meta=fmt(b.a)+'–'+fmt(b.b)+(b.r?'<br>'+esc(b.r):'');
+      if(HOCA){var ct=cnt(c,b.c,L.nStu);if(ct)meta+="<br>"+ct}
+      if(SIN&&c.n!=null){var cs=cntS(c,b.c,L.nStu);if(cs)meta+="<br>"+cs}
+      if(!HOCA&&c.hn)meta+="<br>"+hl(c);
+      var head=esc(c.code)+((HOCA||SIN)&&c.sube?' / '+L.sb+' '+esc(c.sube):'')+(b.lab?' '+L.prac:'')+(SIN&&isElec(c.tur)?' · '+L.elec:'');
+      var pos='left:calc('+b.l+' * 100% / '+b.n+' + 3px);width:calc(100% / '+b.n+' - 6px);';
+      var tip=[c.code+" "+c.name,fmt(b.a)+"–"+fmt(b.b),b.r,(c.hn||[]).join(", ")].filter(Boolean).join("\n");
+      return'<div class="blk'+(b.cf?' cf':'')+(b.n>2?' nw':'')+'" tabindex="0" style="'+pos+'--h:'+((b.b-b.a)*P-2)+'px;top:'+((b.a-st)*P+1)+'px;height:'+((b.b-b.a)*P-2)+'px;background:var(--c'+i+');border-color:var(--c'+i+'b)" title="'+esc(tip)+'"><b>'+head+'</b><div class="n">'+esc(c.name)+'</div><div class="m">'+meta+'</div></div>'}).join("")+'</div>'});
+  tt.innerHTML=h;
+  var C=L.c,OH=!HOCA&&!SIN&&p.courses.some(function(c){return c.hn});
+  var sT=p.courses.some(function(c){return c.tur}),sU=p.courses.some(function(c){return c.tul}),sH=p.courses.some(function(c){return c.hn});
+  var cols=HOCA?[C.code,C.course,C.sec,C.year,C.type,C.tul,C.cr,C.ects,C.stu,C.prog,C.times]
+    :SIN?[C.code,C.course,C.sec].concat(sT?[C.type]:[],sU?[C.tul]:[],[C.cr,C.ects],sH?[C.inst]:[],p.N?[C.stu]:[],[C.times])
+    :[C.code,C.course,C.sec,C.cr,C.ects].concat(OH?[C.inst]:[],[C.times]);
+  var tb="<tr>"+cols.map(function(c){return"<th>"+c+"</th>"}).join("")+"</tr>",K=0,A=0,O=0,Z=0,E=0;
+  p.courses.forEach(function(c,ci){K+=c.kredi;A+=c.akts;O+=+c.ogr||0;if(isComp(c.tur))Z++;if(isElec(c.tur))E++;
+    var ts=p.blocks.filter(function(b){return b.c===ci}).sort(function(x,y){return x.d-y.d||x.a-y.a}).map(function(b){return DAYS[b.d]+" "+fmt(b.a)+"–"+fmt(b.b)+(b.r?" ("+esc(b.r)+")":"")}).join("<br>")||L.noTime;
+    var cells=['<span class="sw" style="background:var(--c'+(ci%8)+'b)"></span>'+esc(c.code),esc(c.name),esc(c.sube)];
+    if(HOCA)cells.push(esc(c.sinif),esc(tur(c.tur)),esc(c.tul),c.kredi,c.akts,cnt(c,ci,"")+(c.kont&&c.ogr!==""?" / "+esc(c.kont):""),esc(c.prog));
+    else if(SIN){if(sT)cells.push(esc(tur(c.tur)));if(sU)cells.push(esc(c.tul));cells.push(c.kredi,c.akts);if(sH)cells.push(hl(c,"<br>"));if(p.N)cells.push(cntS(c,ci,""))}
+    else{cells.push(c.kredi,c.akts);if(OH)cells.push(hl(c,"<br>"))}
+    cells.push(ts);tb+="<tr>"+cells.map(function(x){return"<td>"+x+"</td>"}).join("")+"</tr>"});
+  $("tbl").innerHTML=tb;
+  var S=L.s,ST=HOCA?[[p.courses.length,S.courses],[p.hours,S.hrs]].concat(D&&D.counts?[[O,S.stu]]:[])
+    :SIN?[[p.courses.length,S.courses]].concat(Z+E?[[Z,S.comp],[E,S.elec]]:[],p.N?[[p.N,S.stu]]:[])
+    :[[p.courses.length,S.courses],[K,S.cr],[A,S.ects],[p.hours,S.hrs]];
+  var ONE={courses:"course",credits:"credit",students:"student","hours/week":"hour/week"};
+  $("stats").innerHTML=ST.map(function(s){return"<div><b>"+s[0]+"</b>"+(LANG==="en"&&s[0]===1&&ONE[s[1]]?ONE[s[1]]:s[1])+"</div>"}).join("");
+  var noSch=!p.courses.length;$("tt").parentNode.classList.toggle("hidden",noSch);$("tbl").parentNode.classList.toggle("hidden",noSch);
+  document.querySelector('h3[data-i="list"]').classList.toggle("hidden",noSch);
+  renderAtt(p,kind);
+  if(!quiet&&bl.some(function(b){return b.cf}))msg("conflict");
+  $("res").classList.remove("hidden");
+}
+[].forEach.call(document.querySelectorAll(".pr"),function(b){b.addEventListener("click",function(){print()})});
+setMode(DATA.ogrenci?"ogrenci":DATA.sinif?"sinif":"hoca");
+applyLang();
+</script>
+</template>
+
+<script>
+const DAYS=["Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi","Pazar"];
+const norm=s=>String(s??"").toLocaleLowerCase("tr").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/ı/g,"i").replace(/\s+/g," ").trim();
+const DAYKEY=Object.fromEntries(DAYS.map((d,i)=>[norm(d),i]));
+const cleanKey=k=>norm(k).replace(/_\d+$/,"").replace(/[\s_]+/g,"_").replace(/^_|_$/g,"");
+const num=v=>{const n=parseFloat(String(v).replace(",","."));return isNaN(n)?0:n};
+const str=v=>String(v??"").trim();
+function toMin(v){
+  if(v===""||v==null)return null;
+  if(typeof v==="number")return Math.round((v%1)*1440);
+  const m=String(v).trim().match(/(\d{1,2})[:.](\d{2})(?::\d{2})?\s*(am|pm|öö|ös)?/i);if(!m)return null;
+  let h=+m[1];const ap=(m[3]||"").toLowerCase();
+  if((ap==="pm"||ap==="ös")&&h<12)h+=12;if((ap==="am"||ap==="öö")&&h===12)h=0;return h*60+ +m[2];
+}
+const $=id=>document.getElementById(id);
+let sRows=[],hAll=[],hRows=[],aRows=[],aWeeks=0;
+const status=(p,t,c)=>{const s=$(p?p+"Status":"status");s.textContent=t;s.className=(p?"info ":"status ")+(c||"")};
+const refresh=()=>{$("build").disabled=!(sRows.length||hAll.length||aRows.length)};
+
+const attKey=k=>norm(k).replace(/_\d{3,}$/,"").replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"");
+function readExcel(file,cb,p,keyFn){keyFn=keyFn||cleanKey;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const wb=XLSX.read(ev.target.result,{type:"array"}),rows=[];
+      wb.SheetNames.forEach(n=>XLSX.utils.sheet_to_json(wb.Sheets[n],{raw:true,defval:""}).forEach(x=>{const o={};for(const k in x)o[keyFn(k)]=x[k];rows.push(o)}));
+      cb(rows);
+    }catch(err){status(p,"Dosya okunamadı: "+err.message,"err")}
+  };
+  r.readAsArrayBuffer(file);
+}
+function addSlot(P,ci,x){
+  const d=DAYKEY[norm(x.dp_gun)],a=toMin(x.dp_baslangic_saat),b=toMin(x.dp_bitis_saat);
+  if(d===undefined||a==null||b==null)return;
+  const room=str(x.dp_derslik_ad)||str(x.dp_derslik_kod);
+  const sig=[ci,d,a,b,room].join("|");if(P._seen[sig])return;P._seen[sig]=1;
+  P._slots.push({c:ci,d,a,b,r:room,lab:norm(x.dp_uygulama_mi)==="evet"});
+}
+function finish(people){
+  for(const k in people){
+    const P=people[k];P._slots.sort((p,q)=>p.c-q.c||p.d-q.d||p.a-q.a);
+    const bl=[];P._slots.forEach(t=>{const l=bl[bl.length-1];
+      if(l&&l.c===t.c&&l.d===t.d&&l.r===t.r&&l.lab===t.lab&&t.a-l.b<=15&&t.a>=l.a)l.b=Math.max(l.b,t.b);else bl.push({...t})});
+    bl.forEach(b=>{if(!b.lab)delete b.lab;if(!b.r)delete b.r});
+    P.hours=new Set(P._slots.map(s=>s.d+"|"+s.a)).size;P.blocks=bl;
+    delete P._ck;delete P._slots;delete P._seen;
+  }
+}
+function download(data,fname,count){
+  const json=JSON.stringify(data).replace(/</g,"\\u003c").replace(/\u2028/g,"\\u2028").replace(/\u2029/g,"\\u2029");
+  const body=$("viewer").innerHTML.replace("__DATA__",()=>json);
+  const e=t=>t.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const html=`<!DOCTYPE html>\n<html lang="tr">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1">\n<title>${e(data.title)}</title>\n</head>\n<body>${body}</body>\n</html>`;
+  if(typeof window.__onBuilt==="function"){window.__onBuilt(html,count,data);return}
+  const blob=new Blob([html],{type:"text/html;charset=utf-8"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=fname;document.body.appendChild(a);a.click();a.remove();
+  status("",`Hazır: “${fname}” indirildi (${count}, ${(blob.size/1024).toFixed(0)} KB).`,"ok");
+}
+
+/* ---------- Öğrenci ---------- */
+$("sFile").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;status("s","");
+  readExcel(f,rows=>{
+    sRows=rows.filter(x=>str(x.ogrenci_no));
+    if(!sRows.length){status("s","Bu dosyada 'Öğrenci_No' sütunu yok. Öğrenci Excel'ini seçtiğinizden emin olun.","err");sRows=[];refresh();$("sInfo").textContent="";return}
+    $("sInfo").textContent=`${new Set(sRows.map(x=>str(x.ogrenci_no))).size} öğrenci, ${sRows.length} satır okundu.`;refresh();
+  },"s")});
+function buildStudents(){
+  const withName=$("sName").checked,withProg=$("sProg").checked,people={};
+  sRows.forEach(x=>{
+    const no=str(x.ogrenci_no).toLocaleUpperCase("tr");
+    const P=people[no]||(people[no]={name:withName?`${str(x.adi)} ${str(x.soyadi)}`.trim():"",info:withProg?[str(x.program),sinTR(normSin(x.sinif)),str(x.dh_donemi)].filter(Boolean):[],courses:[],_ck:{},_slots:[],_seen:{}});
+    const ck=`${str(x.dh_kodu)}|${str(x.dh_sube_kodu)}`;
+    if(P._ck[ck]===undefined){P._ck[ck]=P.courses.length;P.courses.push({id:str(x.dh_id),code:str(x.dh_kodu),name:str(x.dh_adi),sube:str(x.dh_sube_kodu),kredi:num(x.dk_kredi),akts:num(x.dk_akts)})}
+    addSlot(P,P._ck[ck],x);
+  });
+  finish(people);
+  if($("sHoca").checked&&hRows.length){
+    const byKey={},byCode={};
+    hRows.forEach(x=>{const n=fullName(hocaName(x)),c=str(x.dh_kodu),k=c+"|"+str(x.dh_sube_kodu);
+      (byKey[k]||(byKey[k]=new Map())).set(n,norm(hocaName(x).adsoyad));(byCode[c]||(byCode[c]={}))[str(x.dh_sube_kodu)]=1});
+    for(const no in people)people[no].courses.forEach(c=>{
+      let h=byKey[c.code+"|"+c.sube];
+      // Şube eşleşmezse ve ders tek şubeyse o şubenin hocasını kullan
+      if(!h&&byCode[c.code]&&Object.keys(byCode[c.code]).length===1)h=byKey[c.code+"|"+Object.keys(byCode[c.code])[0]];
+      if(h){c.hn=[...h.keys()];c.hk=[...h.values()]}
+    });
+  }
+  return {people};
+}
+
+/* ---------- Yoklama ---------- */
+$("aFile").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;status("a","");
+  readExcel(f,rows=>{
+    aRows=rows.filter(x=>str(x.ogrenci_no));aWeeks=0;
+    if(aRows.length)Object.keys(aRows[0]).forEach(k=>{const m=k.match(/^hafta_?(\d+)$/);if(m)aWeeks=Math.max(aWeeks,+m[1])});
+    if(!aRows.length||!aWeeks){aRows=[];status("a","Bu dosyada 'Öğrenci No' ve 'Hafta 1, Hafta 2…' sütunları bulunamadı. Yoklama Excel'ini seçtiğinizden emin olun.","err");refresh();$("aInfo").textContent="";return}
+    $("aInfo").textContent=`${new Set(aRows.map(x=>str(x.ogrenci_no))).size} öğrenci, ${new Set(aRows.map(x=>str(x.ders_har_id)||str(x.ders))).size} ders, ${aWeeks} hafta okundu.`;refresh();
+  },"a",attKey)});
+function normSin(v){const t=str(v);if(!t)return"";const m=t.match(/^(\d+)/);return m?String(+m[1]):t}
+function sinTR(s){return!s?"":/^\d+$/.test(s)?s+". sınıf":s}
+function attCode(v){const n=norm(v);if(n==="var")return"V";if(n==="yok")return"Y";if(!n||/acilmadi/.test(n))return"";return str(v)}
+function addAttendance(people){
+  const withName=$("sName").checked,withProg=$("sProg").checked;let matched=0,extra=0;
+  aRows.forEach(x=>{
+    const no=str(x.ogrenci_no).toLocaleUpperCase("tr");
+    let P=people[no];
+    if(!P){P=people[no]={name:withName?`${str(x.ogrenci_adi)} ${str(x.ogrenci_soyadi)}`.trim():"",
+      info:withProg?[str(x.bolum),str(x.sinif)&&(/^\d+$/.test(str(x.sinif))?str(x.sinif)+". sınıf":str(x.sinif)),str(x.donem)].filter(Boolean):[],courses:[],blocks:[],hours:0};extra++}
+    const id=str(x.ders_har_id),nm=str(x.ders);
+    let ci=P.courses.findIndex(c=>id&&c.id===id);
+    if(ci<0)ci=P.courses.findIndex(c=>norm(c.name)===norm(nm));
+    if(ci>-1)matched++;
+    const w=[];for(let i=1;i<=aWeeks;i++)w.push(attCode(x["hafta_"+i]));
+    while(w.length&&w[w.length-1]==="")w.pop();
+    (P.att||(P.att=[])).push(ci>-1?{c:ci,w}:{n:nm,w});
+  });
+  for(const no in people)if(people[no].att)people[no].att.sort((a,b)=>(a.c??999)-(b.c??999));
+  return {matched,extra};
+}
+
+/* ---------- Öğretim elemanı ---------- */
+function hocaName(x){
+  const ad=str(x.dh_o_e_ad),soyad=str(x.dh_o_e_soyad);
+  if(ad||soyad)return{unvan:str(x.dh_o_e_unvan),adsoyad:`${ad} ${soyad}`.trim()};
+  const alt=str(x.ogretim_uyesi_ad_soyad);
+  return alt?{unvan:str(x.ogretim_uyesi_unvan),adsoyad:alt}:null;
+}
+const fullName=n=>n?[n.unvan,n.adsoyad].filter(Boolean).join(" "):"";
+$("hFile").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;status("h","");
+  readExcel(f,rows=>{
+    hAll=rows.filter(x=>str(x.dh_kodu));hRows=hAll.filter(x=>hocaName(x));
+    if(!hAll.length){status("h","Bu dosyada 'DH_Kodu' sütunu bulunamadı. Öğretim elemanı Excel'ini seçtiğinizden emin olun.","err");hRows=[];refresh();$("hInfo").textContent="";return}
+    const nh=new Set(hRows.map(x=>norm(hocaName(x).adsoyad))).size,np=new Set(hAll.map(x=>str(x.dh_programi)).filter(Boolean)).size;
+    $("hInfo").textContent=`${nh} öğretim elemanı, ${np} bölüm, ${hAll.length} satır okundu.`;refresh();
+  },"h")});
+function buildHoca(){
+  const counts=$("hCount").checked,people={};
+  hRows.forEach(x=>{
+    const n=hocaName(x),k=norm(n.adsoyad);
+    const P=people[k]||(people[k]={name:fullName(n),info:[str(x.dh_donemi)].filter(Boolean),courses:[],_ck:{},_slots:[],_seen:{}});
+    const ck=`${str(x.dh_kodu)}|${str(x.dh_sube_kodu)}`;
+    if(P._ck[ck]===undefined){
+      P._ck[ck]=P.courses.length;
+      P.courses.push({code:str(x.dh_kodu),name:str(x.dh_adi),sube:str(x.dh_sube_kodu),sinif:str(x.dh_sinifi),tur:str(x.dh_zorunlu),
+        tul:[x.dh_teorik_saati,x.dh_uygulama_saati,x.dh_laboratuar_saati].map(v=>str(v)||"0").join("-"),
+        kredi:num(x.dh_kredi),akts:num(x.dh_akts),ogr:counts?str(x.dh_dersi_alan_ogr_say):"",kont:counts?str(x.dp_derslik_kontenjan):"",_progs:new Set()});
+    }
+    P.courses[P._ck[ck]]._progs.add(str(x.dh_programi));
+    addSlot(P,P._ck[ck],x);
+  });
+  for(const k in people)people[k].courses.forEach(c=>{c.prog=[...c._progs].filter(Boolean).join(", ");delete c._progs});
+  finish(people);
+  const list=Object.keys(people).map(k=>({k,label:people[k].name,s:norm(people[k].name)})).sort((a,b)=>a.s.localeCompare(b.s,"tr"));
+  return {counts,people,list};
+}
+
+/* ---------- Bölüm ve sınıf ---------- */
+function buildSinif(){
+  const progs={},pName={},withList=$("hRoster").checked;
+  const G=(prog,sin,donem)=>{const pk=norm(prog);if(!pName[pk])pName[pk]=prog;const nm=pName[pk];
+    const g=progs[nm]||(progs[nm]={});
+    return g[sin]||(g[sin]={prog:nm,sin,info:[donem].filter(Boolean),courses:[],_ck:{},_slots:[],_seen:{},_st:new Set()})};
+  const newCourse=(P,ck,o)=>{P._ck[ck]=P.courses.length;P.courses.push(Object.assign({_h:new Map(),_st:new Set()},o));return P._ck[ck]};
+  // 1) Müfredat: öğretim elemanı Excel'i
+  hAll.forEach(x=>{
+    const P=G(str(x.dh_programi)||"Diğer",normSin(x.dh_sinifi)||"Belirtilmemiş",str(x.dh_donemi));
+    const ck=`${str(x.dh_kodu)}|${str(x.dh_sube_kodu)}`;
+    let ci=P._ck[ck];
+    if(ci===undefined)ci=newCourse(P,ck,{m:1,code:str(x.dh_kodu),name:str(x.dh_adi),sube:str(x.dh_sube_kodu),tur:str(x.dh_zorunlu),
+      tul:[x.dh_teorik_saati,x.dh_uygulama_saati,x.dh_laboratuar_saati].map(v=>str(v)||"0").join("-"),kredi:num(x.dh_kredi),akts:num(x.dh_akts)});
+    const hx=hocaName(x);if(hx)P.courses[ci]._h.set(fullName(hx),norm(hx.adsoyad));
+    addSlot(P,ci,x);
+  });
+  // Ders kodu+şube -> hoca / ders bilgisi (öğrenci tarafındaki dersler için)
+  const hIdx={};hAll.forEach(x=>{const k=str(x.dh_kodu)+"|"+str(x.dh_sube_kodu);const e=hIdx[k]||(hIdx[k]={x,h:new Map()});
+    const hx=hocaName(x);if(hx)e.h.set(fullName(hx),norm(hx.adsoyad))});
+  // 2) Sınıftaki öğrencilerin kayıtlı olduğu dersler: öğrenci Excel'i
+  sRows.forEach(x=>{
+    const sin=normSin(x.sinif),prog=str(x.program);if(!sin||!prog)return;
+    const P=G(prog,sin,str(x.dh_donemi)),no=str(x.ogrenci_no).toLocaleUpperCase("tr");P._st.add(no);
+    const ck=`${str(x.dh_kodu)}|${str(x.dh_sube_kodu)}`;
+    let ci=P._ck[ck];
+    if(ci===undefined){const hx=hIdx[ck];
+      ci=newCourse(P,ck,{code:str(x.dh_kodu),name:str(x.dh_adi),sube:str(x.dh_sube_kodu),
+        tur:hx?str(hx.x.dh_zorunlu):"",tul:hx?[hx.x.dh_teorik_saati,hx.x.dh_uygulama_saati,hx.x.dh_laboratuar_saati].map(v=>str(v)||"0").join("-"):"",
+        kredi:num(x.dk_kredi),akts:num(x.dk_akts)});
+      if(hx)hx.h.forEach((v,k)=>P.courses[ci]._h.set(k,v));
+    }
+    P.courses[ci]._st.add(no);
+    if(!P.courses[ci].m)addSlot(P,ci,x);
+  });
+  for(const p in progs){
+    for(const s in progs[p]){
+      const P=progs[p][s];
+      if(P._st.size)P.N=P._st.size;delete P._st;
+      const order=P.courses.map((c,i)=>i).sort((a,b)=>{const A=P.courses[a],B=P.courses[b];
+        return(/zorunlu/i.test(B.tur)-/zorunlu/i.test(A.tur))||((B.m||0)-(A.m||0))||(B._st.size-A._st.size)||A.code.localeCompare(B.code,"tr")||A.sube.localeCompare(B.sube,"tr",{numeric:true})});
+      const map={};order.forEach((old,nw)=>map[old]=nw);
+      P.courses=order.map(i=>P.courses[i]);P._slots.forEach(t=>t.c=map[t.c]);
+      P.courses.forEach(c=>{if(c._h.size){c.hn=[...c._h.keys()];c.hk=[...c._h.values()]}
+        if(P.N){c.n=c._st.size;if(withList&&c.n)c.st=[...c._st].sort((a,b)=>a.localeCompare(b,"tr",{numeric:true}))}
+        delete c._h;delete c._st});
+    }
+    finish(progs[p]);
+  }
+  return progs;
+}
+
+function buildRoster(){
+  const r={};
+  sRows.forEach(x=>{const k=str(x.dh_kodu)+"|"+str(x.dh_sube_kodu),no=str(x.ogrenci_no).toLocaleUpperCase("tr");
+    const M=r[k]||(r[k]={});if(!(no in M))M[no]=str(x.kayit_nedeni)});
+  const out={};
+  for(const k in r)out[k]=Object.keys(r[k]).sort((a,b)=>a.localeCompare(b,"tr",{numeric:true})).map(no=>r[k][no]?[no,r[k][no]]:[no]);
+  return out;
+}
+$("build").addEventListener("click",()=>{
+  const data={title:$("title").value.trim()||"Haftalık Ders Programı",titleEn:$("titleEn").value.trim()||"Weekly Course Schedule",ogrenci:null,sinif:null,hoca:null,updated:window.__dataUpdated||new Date().toISOString()},parts=[];
+  if(sRows.length||aRows.length){data.ogrenci=buildStudents();
+    if(aRows.length){const r=addAttendance(data.ogrenci.people);data.weeks=aWeeks;parts.push("yoklama: "+aRows.length+" kayıt"+(r.extra?", "+r.extra+" öğrenci yalnızca yoklamada":""))}
+    data.ogrenci.people&&Object.values(data.ogrenci.people).forEach(p=>p.courses.forEach(c=>delete c.id));
+    parts.unshift(Object.keys(data.ogrenci.people).length+" öğrenci")}
+  if((hAll.length||sRows.some(x=>str(x.sinif)))&&$("sSinif").checked){data.sinif=buildSinif();parts.push(Object.keys(data.sinif).length+" bölüm")}
+  if(hRows.length&&$("hTab").checked){data.hoca=buildHoca();parts.push(data.hoca.list.length+" öğretim elemanı")}
+  if(data.hoca&&data.ogrenci&&$("hRoster").checked)data.roster=buildRoster();
+  if(!parts.length){status("","Dosyaya eklenecek bir şey yok. En az bir görünümü açık bırakın.","err");return}
+  download(data,"ders-programi.html",parts.join(", "));
+});
+
+</script>
+<!-- ====== GitHub sürümü: SharePoint köprüsü üzerinden yükleme, bilgisayarda saklama, "Güncelle" ile yenileme ====== -->
+<script>
+(function(){
+  var AYAR={
+    baslikTR:"Haftalık Ders Programı",
+    baslikEN:"Weekly Course Schedule",
+    sharepointSite:"https://areledutr.sharepoint.com/sites/DHMOrtakAlan",
+    kopruBetigi:"ders-programi-kopru.user.js",
+    // Normalde boş bırakın (türler sütunlardan anlaşılır, her türün en yenisi kullanılır)
+    dosyalar:{ogrenci:"",ogretimElemani:"",yoklama:""},
+    secenekler:{ogrenciAdSoyad:true,programDonem:true,dersHocalari:true,bolumSinif:true,hocaSekmesi:true,ogrenciSayisi:true,ogrenciListeleri:true}
+  };
+
+  var $=function(i){return document.getElementById(i)};
+  var box=$("gLive"),bar=$("gBar"),quiet=false,busy=false;
+  function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+  function card(html){box.innerHTML='<div class="g-card"><h1>'+esc(AYAR.baslikTR)+'</h1>'+html+'</div>';box.hidden=false}
+  // Güncelleme sırasında mevcut program görünür kalır; durum üst çubukta yazılır
+  function msg(t,err){var m=$("gMsg");m.textContent=t||"";m.className=err?"err":"";m.title=t||""}
+  function wait(t){if(quiet)msg(t);else card('<p class="g-msg"><span class="g-spin"></span>'+esc(t)+'</p>')}
+  function when(t){return new Date(t).toLocaleString("tr-TR",{day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"})}
+
+  /* ---- Bilgisayarda saklama (IndexedDB; tarayıcı verisi temizlenmedikçe kalır) ---- */
+  function idb(){return new Promise(function(res,rej){var r=indexedDB.open("dp-cache",1);
+    r.onupgradeneeded=function(){r.result.createObjectStore("kv")};r.onsuccess=function(){res(r.result)};r.onerror=function(){rej(r.error)}})}
+  function idbGet(){return idb().then(function(db){return new Promise(function(res,rej){
+    var q=db.transaction("kv").objectStore("kv").get("last");q.onsuccess=function(){res(q.result)};q.onerror=function(){rej(q.error)}})}).catch(function(e){console.warn(e);return null})}
+  function idbSet(v){return idb().then(function(db){return new Promise(function(res,rej){
+    var t=db.transaction("kv","readwrite");t.objectStore("kv").put(v,"last");t.oncomplete=res;t.onerror=function(){rej(t.error)}})})}
+
+  /* ---- Köprüyle haberleşme ---- */
+  var pend={},seq=0;
+  window.addEventListener("message",function(e){var d=e.data;if(!d||d.dp!=="res"||!pend[d.id])return;var p=pend[d.id];delete pend[d.id];
+    if(d.error){var er=new Error(d.error.message);er.status=d.error.status;er.detail=d.error.detail;p.rej(er)}else p.res(d)});
+  function call(op,arg,ms){return new Promise(function(res,rej){var id=++seq;pend[id]={res:res,rej:rej};
+    window.postMessage({dp:"req",op:op,id:id,arg:arg},"*");
+    setTimeout(function(){if(pend[id]){delete pend[id];var e=new Error("Köprü yanıt vermedi");e.timeout=true;rej(e)}},ms||120000)})}
+  async function findBridge(){for(var i=0;i<12;i++){try{return(await call("ping",null,250)).v}catch(e){}}return null}
+
+  /* ---- Excel türünü tanıma ---- */
+  function kk(k){return norm(k).replace(/_\d+$/,"").replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"")}
+  function sheetType(h){var has=function(k){return h.indexOf(k)>-1};
+    if(has("ogrenci_no")&&h.some(function(x){return/^hafta_?1$/.test(x)}))return"yoklama";
+    if(has("ogrenci_no")&&has("dp_gun"))return"ogrenci";
+    if(!has("ogrenci_no")&&has("dh_kodu")&&(has("dh_o_e_ad")||has("dh_dersi_alan_ogr_say")||has("ogretim_uyesi_ad_soyad")))return"ogretimElemani";
+    return null}
+  function detect(buf){var out={};try{var wb=XLSX.read(buf,{type:"array",sheetRows:2});
+    wb.SheetNames.forEach(function(n){var t=sheetType((XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1})[0]||[]).map(kk));if(t)(out[t]||(out[t]=[])).push(n)})}catch(e){}return out}
+  function subset(buf,sheets){var wb=XLSX.read(buf,{type:"array"}),nb=XLSX.utils.book_new();
+    sheets.forEach(function(n){XLSX.utils.book_append_sheet(nb,wb.Sheets[n],n)});return XLSX.write(nb,{type:"array",bookType:"xlsx"})}
+  function feed(prefix,name,buf){return new Promise(function(res,rej){
+    var dt=new DataTransfer();dt.items.add(new File([buf],name));var inp=$(prefix+"File");inp.files=dt.files;inp.dispatchEvent(new Event("change"));
+    var t0=Date.now();(function w(){var info=$(prefix+"Info").textContent,st=$(prefix+"Status").textContent;
+      if(st)return rej(new Error(name+": "+st));if(info)return res();if(Date.now()-t0>120000)return rej(new Error(name+": zaman aşımı"));setTimeout(w,100)})()})}
+
+  /* ---- Program görünümü ---- */
+  var vFrame=null;
+  function show(html){
+    if(vFrame)vFrame.remove();
+    vFrame=document.createElement("iframe");vFrame.id="gFrame";vFrame.title=AYAR.baslikTR;vFrame.srcdoc=html;
+    vFrame.onload=function(){try{document.title=vFrame.contentDocument.title}catch(e){}};
+    document.body.appendChild(vFrame);box.hidden=true;document.body.classList.add("g-done")}
+  // Program her oluştuğunda (köprüden ya da elle yüklemeden) bilgisayarda saklanır
+  window.__onBuilt=function(html){
+    show(html);
+    idbSet({html:html,saved:Date.now()}).then(function(){msg("Son güncelleme: "+when(Date.now()))},
+      function(e){console.warn(e);msg("Bilgisayarda saklanamadı; sayfa her açılışta yeniden okunacak.",true)})};
+
+  function applyOptions(){var ids={ogrenciAdSoyad:"sName",programDonem:"sProg",dersHocalari:"sHoca",bolumSinif:"sSinif",hocaSekmesi:"hTab",ogrenciSayisi:"hCount",ogrenciListeleri:"hRoster"};
+    for(var k in ids)if(k in AYAR.secenekler)$(ids[k]).checked=!!AYAR.secenekler[k];
+    $("title").value=AYAR.baslikTR;$("titleEn").value=AYAR.baslikEN}
+
+  function manual(){document.body.classList.remove("g-live");document.body.classList.add("g-manual");box.hidden=true;applyOptions()}
+
+  function needBridge(){
+    card('<p class="g-msg">Bu sayfa raporları DHMOrtakAlan SharePoint klasöründen <b>sizin oturumunuzla</b> okur ve bilgisayarınızda saklar. Bunun için tarayıcınıza bir kez iki şey kurmanız gerekir:</p>'+
+      '<ol class="g-steps"><li><a href="https://www.tampermonkey.net/" target="_blank" rel="noopener">Tampermonkey</a> eklentisini kurun (Edge veya Chrome).</li>'+
+      '<li>Eklentiler sayfasında Tampermonkey\'in ayrıntılarını açıp <b>“Kullanıcı betiklerine izin ver”</b> seçeneğini açın.</li>'+
+      '<li><a href="'+esc(AYAR.kopruBetigi)+'" target="_blank">SharePoint köprüsünü kurun</a> (açılan Tampermonkey ekranında “Yükle”ye basın).</li>'+
+      '<li>Bu sayfayı yenileyin.</li></ol>'+
+      '<div class="g-btns"><button class="btn g-b" id="gRe">Sayfayı yenile</button><button class="btn g-b ghost" id="gMan">Excel\'leri elle yükle</button></div>');
+    $("gRe").onclick=function(){location.reload()};$("gMan").onclick=manual}
+
+  function sessionHint(e){return e.status===401?"SharePoint oturumunuz açık değil.":e.status===403?"Rapor klasörüne erişim izniniz yok.":""}
+
+  function fail(e){console.error(e);
+    var s=e.status,m,extra="";
+    if(s===401||s===403){m=sessionHint(e);
+      extra='<p class="g-msg">Aynı tarayıcıda <a href="'+esc(AYAR.sharepointSite)+'" target="_blank" rel="noopener">SharePoint sitesini açıp</a> üniversite hesabınızla giriş yapın, sonra “Tekrar dene”ye basın.</p>'}
+    else m=e.message.split("\n")[0];
+    var det=e.detail||e.message.split("\n").slice(1).join("\n");
+    card('<p class="g-err">'+esc(m)+'</p>'+extra+(det?'<pre class="g-det">'+esc(det)+'</pre>':"")+
+      '<div class="g-btns"><button class="btn g-b" id="gRe">Tekrar dene</button><button class="btn g-b ghost" id="gMan">Excel\'leri elle yükle</button></div>');
+    $("gRe").onclick=function(){location.reload()};$("gMan").onclick=manual}
+
+  async function run(){
+    wait("SharePoint klasörü okunuyor…");
+    var files=(await call("list")).files.sort(function(a,b){return new Date(b.modified)-new Date(a.modified)}).slice(0,25);
+    var chosen={},cache={},n=0;
+    async function take(f,only){
+      if(!cache[f.id]){wait("Raporlar indiriliyor ("+(++n)+")…");cache[f.id]=(await call("get",f.id)).buf}
+      var buf=cache[f.id],map=detect(buf),types=Object.keys(map);
+      types.forEach(function(t){if(chosen[t]||(only&&t!==only))return;chosen[t]={f:f,buf:types.length>1?subset(buf,map[t]):buf}})}
+    for(var t in AYAR.dosyalar){var want=AYAR.dosyalar[t];if(!want)continue;
+      var f=files.find(function(x){return norm(x.name)===norm(want)});if(!f)throw new Error("Klasörde bulunamadı: "+want);await take(f,t)}
+    for(var i=0;i<files.length&&!(chosen.ogrenci&&chosen.ogretimElemani&&chosen.yoklama);i++)await take(files[i]);
+    if(!chosen.ogrenci&&!chosen.ogretimElemani)throw new Error("Klasörde öğrenci ya da öğretim elemanı raporu bulunamadı.");
+    wait("Program hazırlanıyor…");applyOptions();
+    // Önceki okumadan kalan veriyi ve durum yazılarını temizle (güncelleme sırasında eski veri karışmasın)
+    sRows=[];hAll=[];hRows=[];aRows=[];aWeeks=0;
+    ["sInfo","sStatus","hInfo","hStatus","aInfo","aStatus"].forEach(function(id){$(id).textContent=""});
+    var pre={ogrenci:"s",ogretimElemani:"h",yoklama:"a"},latest=0;
+    for(var ty in pre)if(chosen[ty]){var ext=(chosen[ty].f.name.match(/\.[^.]+$/)||[".xlsx"])[0];
+      await feed(pre[ty],ty+ext,chosen[ty].buf);latest=Math.max(latest,new Date(chosen[ty].f.modified).getTime()||0)}
+    window.__dataUpdated=latest?new Date(latest).toISOString():undefined;
+    $("build").click();
+    var st=$("status");if(st&&/err/.test(st.className))throw new Error(st.textContent);
+  }
+
+  // keep=true: kayıtlı program ekranda; hata olursa o korunur. keep=false: ilk kurulum, ekranda kart gösterilir.
+  async function update(keep){
+    if(busy)return;busy=true;quiet=keep;
+    var btn=$("gRefresh");btn.disabled=true;
+    try{
+      if(keep)msg("SharePoint'ten okunuyor…");else wait("SharePoint köprüsü aranıyor…");
+      var v=await findBridge();
+      if(!v){if(keep)msg("Köprü betiği bulunamadı. Tampermonkey'de açık olduğundan emin olun; kayıtlı program korunuyor.",true);else needBridge();return}
+      await run();
+    }catch(e){
+      console.error(e);
+      if(keep)msg((sessionHint(e)?sessionHint(e)+" SharePoint'te giriş yapıp tekrar deneyin. ":"")+e.message.split("\n")[0]+" — kayıtlı program korunuyor.",true);
+      else fail(e);
+    }finally{busy=false;quiet=false;btn.disabled=false}
+  }
+  $("gRefresh").onclick=function(){update(true)};
+
+  (async function(){
+    document.body.classList.add("g-live");
+    var c=await idbGet();
+    if(c&&c.html){show(c.html);msg("Son güncelleme: "+when(c.saved));return}   // kayıt varsa SharePoint'e hiç gidilmez
+    wait("SharePoint köprüsü aranıyor…");
+    await update(false);
+  })();
+})();
+</script>
+
+</body>
+</html>
