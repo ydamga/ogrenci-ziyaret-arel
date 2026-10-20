@@ -105,6 +105,14 @@ body.g-done{overflow:hidden}
   </section>
 
   <section class="card" style="margin-top:16px">
+    <h2>Sınavlar</h2>
+    <p class="sub">Öğrenci, akademisyen ve bölüm bazlı sınav takvimi</p>
+    <div class="step"><b>Sınav Excel dosyası</b>
+      <input type="file" id="eFile" accept=".xlsx,.xls,.csv,.xlsm"><div class="info" id="eInfo"></div><div class="info" id="eStatus"></div></div>
+    <p class="note">Akademisyen ve bölüm görünümleri yalnızca bu dosyayla çalışır. Öğrenci görünümü için öğrenci Excel'i de yüklenmelidir; öğrencinin dersleri ders kodu ve şubeyle sınavlara bağlanır.</p>
+  </section>
+
+  <section class="card" style="margin-top:16px">
     <div class="step"><b>Sayfa başlığı (Türkçe)</b><input type="text" id="title" value="Haftalık Ders Programı"></div>
     <div class="step"><b>Sayfa başlığı (İngilizce)</b><input type="text" id="titleEn" value="Weekly Course Schedule"></div>
     <button class="btn" id="build" disabled>Paylaşılabilir dosyayı oluştur</button>
@@ -200,6 +208,9 @@ body.mo{overflow:hidden}
 .ac.N{color:var(--muted);opacity:.6}
 .leg{display:flex;flex-wrap:wrap;gap:6px 16px;margin:10px 2px 0;color:var(--muted);font-size:13px;align-items:center}
 .leg .ac{width:20px;height:20px;font-size:11px;margin-right:6px}
+.kmeta{color:var(--muted);font-size:13px;margin:2px 0 8px}
+.cfl{display:inline-block;font-size:11.5px;font-weight:700;padding:1px 7px;border-radius:20px;background:var(--warn-bg);color:var(--warn);margin-left:6px;white-space:nowrap}
+#snv .tabs.small{margin-bottom:12px}
 @media print{.searchbox,.sel,.tabs,.back,h1,.pr{display:none!important}.tt{min-width:0!important}
   body.mo>.wrap,body.mo .mtools,body.mo .x{display:none!important}
   body.mo .ov{position:static;background:none;padding:0}body.mo .modal{max-height:none;box-shadow:none;border:0}body.mo .mb{overflow:visible}}
@@ -215,6 +226,7 @@ body.mo{overflow:hidden}
   <div class="tabs" id="tabs" role="tablist">
     <button type="button" role="tab" data-t="ogr" data-i="tabOgr"></button>
     <button type="button" role="tab" data-t="hoca" data-i="tabHoca"></button>
+    <button type="button" role="tab" data-t="sinav" data-i="tabSnv"></button>
   </div>
   <div class="tabs small" id="subtabs" role="tablist">
     <button type="button" role="tab" data-m="ogrenci" data-i="subNum"></button>
@@ -231,6 +243,7 @@ body.mo{overflow:hidden}
   </div>
   <p class="back hidden" id="back"><button type="button" id="backBtn"></button></p>
   <p class="msg hidden" id="msg"></p>
+  <div id="snv" class="hidden"></div>
   <div id="res" class="hidden">
     <div class="person"><div><h2 id="pN"></h2><p id="pI"></p></div>
       <div class="stats" id="stats"></div>
@@ -255,7 +268,7 @@ body.mo{overflow:hidden}
 <script>
 var DATA = __DATA__;
 var TX={
-tr:{days:["Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi","Pazar"],tabOgr:"Öğrenci",tabHoca:"Öğretim elemanı",subNum:"Numarayla",subSin:"Bölüm ve sınıfla",
+tr:{days:["Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi","Pazar"],tabOgr:"Öğrenci",tabHoca:"Öğretim elemanı",tabSnv:"Sınavlar",sv:{vOgr:"Öğrenci",vHoca:"Akademisyen",vBol:"Bölüm",phOgr:"Öğrenci numarası veya adı",phHoca:"Ad veya soyad yazın",go:"Göster",selProg:"Bölüm seçin",allY:"Tüm sınıflar",allT:"Tüm sınavlar",date:"Tarih",time:"Saat",course:"Ders",sec:"Şube",year:"Sınıf",type:"Sınav",inst:"Öğretim elemanı",none:"Bu seçim için sınav bulunamadı.",empty:"Bir numara ya da ad yazın.",nf:function(t){return"“"+t+"” ile eşleşen kayıt bulunamadı."},multi:function(n){return n+" kişi eşleşti. Listeden seçin."},cf:"Çakışma",miss:function(n){return n+" dersin sınav bilgisi bulunamadı"},cnt:function(n){return n+" sınav"}},subNum:"Numarayla",subSin:"Bölüm ve sınıfla",
  phNum:"Öğrenci numarası veya adı",phHoca:"Ad veya soyad yazın",go:"Programı göster",print:"Yazdır",list:"Ders listesi",attT:"Devam durumu",
  a:{course:"Ders",wk:"H",week:"Hafta",abs:"Devamsızlık",V:"Var",Y:"Yok",N:"Yoklama açılmadı",other:"Diğer",of:function(y,t){return y+" / "+t},tip:"Yoklama alınan haftalarda gelmediği hafta sayısı"},selProg:"Bölüm seçin",prog:"Bölüm",sin:"Sınıf",
  year:function(s){return/^\d+$/.test(s)?s+". sınıf":s},
@@ -268,7 +281,7 @@ tr:{days:["Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi","Pazar
    filter:"Numara veya adla filtrele",no:"Öğrenci No",name:"Ad Soyad",prog:"Program",why:"Kayıt nedeni",close:"Kapat",open:"Öğrenci listesini aç",stu:"Ders programını aç",none:"Eşleşen öğrenci yok."},
  m:{emptyHoca:"Bir ad veya soyad yazın.",emptyNum:"Öğrenci numarası ya da adı yazın.",nfHoca:function(t){return"“"+t+"” ile eşleşen öğretim elemanı bulunamadı."},
    nfNum:function(t){return"“"+t+"” numarası ya da adıyla eşleşen öğrenci bulunamadı."},multi:function(n){return n+" kişi eşleşti. Listeden seçin."},conflict:"Dikkat: programda çakışan dersler var (kırmızı çerçeveli bloklar)."}},
-en:{days:["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],tabOgr:"Student",tabHoca:"Instructor",subNum:"By student number",subSin:"By department & year",
+en:{days:["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],tabOgr:"Student",tabHoca:"Instructor",tabSnv:"Exams",sv:{vOgr:"Student",vHoca:"Instructor",vBol:"Department",phOgr:"Student number or name",phHoca:"Type a first or last name",go:"Show",selProg:"Select department",allY:"All years",allT:"All exams",date:"Date",time:"Time",course:"Course",sec:"Section",year:"Year",type:"Exam",inst:"Instructor",none:"No exams found for this selection.",empty:"Please type a number or name.",nf:function(t){return"No match for “"+t+"”."},multi:function(n){return n+" people match. Pick one from the list."},cf:"Clash",miss:function(n){return"No exam information for "+n+(n===1?" course":" courses")},cnt:function(n){return n+(n===1?" exam":" exams")}},subNum:"By student number",subSin:"By department & year",
  phNum:"Student number or name",phHoca:"Type a first or last name",go:"Show schedule",print:"Print",list:"Course list",attT:"Attendance",
  a:{course:"Course",wk:"W",week:"Week",abs:"Absences",V:"Present",Y:"Absent",N:"Not taken",other:"Other",of:function(y,t){return y+" / "+t},tip:"Weeks absent out of weeks attendance was taken"},selProg:"Select department",prog:"Department",sin:"Year",
  year:function(s){return/^\d+$/.test(s)?"Year "+s:s},
@@ -295,10 +308,10 @@ var hasOgr=!!(DATA.ogrenci||DATA.sinif);
 if(DATA.ogrenci&&!DATA.ogrenci.list){var SP=DATA.ogrenci.people;
   DATA.ogrenci.list=Object.keys(SP).filter(function(k){return SP[k].name}).map(function(k){var P=SP[k];
     return{k:k,label:P.name+(P.info&&P.info.length?" — "+P.info.join(", "):""),s:norm(P.name)}}).sort(function(a,b){return a.s.localeCompare(b.s,"tr")})}
-[].forEach.call($("tabs").children,function(b){
-  if(b.dataset.t==="ogr"?!hasOgr:!DATA.hoca)b.classList.add("hidden");
-  b.onclick=function(){setMode(b.dataset.t==="hoca"?"hoca":(lastOgr||(DATA.ogrenci?"ogrenci":"sinif")))}});
-if(!(hasOgr&&DATA.hoca))$("tabs").classList.add("hidden");
+[].forEach.call($("tabs").children,function(b){var t=b.dataset.t;
+  if(t==="ogr"?!hasOgr:t==="hoca"?!DATA.hoca:!DATA.sinav)b.classList.add("hidden");
+  b.onclick=function(){setMode(t==="hoca"?"hoca":t==="sinav"?"sinav":(lastOgr||(DATA.ogrenci?"ogrenci":"sinif")))}});
+if([hasOgr,!!DATA.hoca,!!DATA.sinav].filter(Boolean).length<2)$("tabs").classList.add("hidden");
 [].forEach.call($("subtabs").children,function(b){b.onclick=function(){setMode(b.dataset.m)}});
 [].forEach.call($("lang").children,function(b){b.onclick=function(){setLang(b.dataset.l)}});
 
@@ -316,6 +329,7 @@ function applyLang(){
   if(DATA.sinif){var pv=$("prog").value,sv=$("sin").value;fillProg();$("prog").value=pv;if(pv){fillSin(pv);$("sin").value=sv}
     if(pv&&sv&&DATA.sinif[pv][sv]){var nm=DATA.sinif[pv][sv].courses.filter(function(c){return isMinor(c,DATA.sinif[pv][sv].N)}).length;$("minorL").textContent=L.minor(nm);$("minorBox").title=L.minorTip}}
   $("backBtn").textContent=backLabel(backTo);
+  if(MODE==="sinav")renderSinav();
   if(CUR)render(CUR.p,CUR.kind,CUR.no,true);
   if(RC)drawRoster();
   if(MSG)msg(MSG[0],MSG[1]);
@@ -348,10 +362,18 @@ function showSinif(){var p=$("prog").value,s=$("sin").value;msg("");
 $("minor").addEventListener("change",showSinif);
 
 function setMode(m){
+  if(m!=="sinav"){$("snv").classList.add("hidden");return setMode0(m)}
+  if(MODE&&MODE!=="sinav")STATE[MODE]={q:q.value,prog:$("prog").value,sin:$("sin").value,cur:CUR,msg:MSG};
+  MODE="sinav";CUR=null;MSG=null;
+  [].forEach.call($("tabs").children,function(b){b.setAttribute("aria-selected",b.dataset.t==="sinav")});
+  ["subtabs","numbox","selbox","back","msg","res"].forEach(function(i){$(i).classList.add("hidden")});
+  sug.classList.add("hidden");$("snv").classList.remove("hidden");renderSinav();
+}
+function setMode0(m){
   $("back").classList.add("hidden");
   if(MODE)STATE[MODE]={q:q.value,prog:$("prog").value,sin:$("sin").value,cur:CUR,msg:MSG};
   MODE=m;if(m!=="hoca")lastOgr=m;D=m==="sinif"?null:DATA[m];
-  [].forEach.call($("tabs").children,function(b){b.setAttribute("aria-selected",(b.dataset.t==="hoca")===(m==="hoca"))});
+  [].forEach.call($("tabs").children,function(b){b.setAttribute("aria-selected",b.dataset.t===(m==="hoca"?"hoca":"ogr"))});
   [].forEach.call($("subtabs").children,function(b){b.setAttribute("aria-selected",b.dataset.m===m)});
   $("subtabs").classList.toggle("hidden",m==="hoca"||!(DATA.ogrenci&&DATA.sinif));
   $("numbox").classList.toggle("hidden",m==="sinif");$("selbox").classList.toggle("hidden",m!=="sinif");
@@ -520,8 +542,106 @@ function render(p,kind,no,quiet){
   if(!quiet&&bl.some(function(b){return b.cf}))msg("conflict");
   $("res").classList.remove("hidden");
 }
+/* ---------- Sınavlar ---------- */
+var SNV={v:"",tip:"",prog:"",sin:"",q:"",cur:null},EXK=null,EXC=null,EXH=null,EXHL=null,SNVP=null,SNVT=null;
+function snvInit(){
+  if(EXK)return;EXK={};EXC={};EXH={};var ps={},ts={};
+  DATA.sinav.ex.forEach(function(o){
+    (EXK[o.k]||(EXK[o.k]=[])).push(o);(EXC[o.c]||(EXC[o.c]={}))[o.s]=1;
+    if(o.p)ps[o.p]=1;if(o.t)ts[o.t]=1;
+    if(o.b)(EXH[o.b]||(EXH[o.b]={b:o.b,h:o.h,r:[]})).r.push(o)});
+  EXHL=Object.keys(EXH).map(function(b){return{k:b,label:EXH[b].h,s:norm(b)}}).sort(function(a,b){return a.s.localeCompare(b.s,"tr")});
+  SNVP=Object.keys(ps).sort(function(a,b){return a.localeCompare(b,"tr")});SNVT=Object.keys(ts);
+}
+function snvFind(list,t){var w=norm(t).split(" ").filter(Boolean);return w.length?list.filter(function(p){return w.every(function(x){return p.s.indexOf(x)>-1})}):[]}
+// Aynı sınavın farklı satırlarını (öğretim elemanı / program) tek satırda birleştirir
+function snvMerge(rows,keepY){var m={},out=[];
+  rows.forEach(function(o){var key=[o.k,o.t,o.sn,o.d,o.a,keepY?o.p+"|"+o.y:""].join("|"),e=m[key];
+    if(!e){e=m[key]={o:o,h:[]};out.push(e)}if(o.h&&e.h.indexOf(o.h)<0)e.h.push(o.h)});
+  return out.map(function(e){var o={};for(var k in e.o)o[k]=e.o[k];o.hh=e.h;return o})}
+function snvSort(a){return a.sort(function(x,y){var dx=x.d||"9",dy=y.d||"9";return dx<dy?-1:dx>dy?1:x.a-y.a||x.c.localeCompare(y.c,"tr")})}
+function snvDate(d){if(!d)return"—";var p=d.split("-"),wd=(new Date(Date.UTC(+p[0],+p[1]-1,+p[2])).getUTCDay()+6)%7;return p[2]+"."+p[1]+"."+p[0]+" "+L.days[wd]}
+function snvTable(rows,o){var S=L.sv;
+  rows=rows.filter(function(r){return!SNV.tip||r.t===SNV.tip});
+  if(!rows.length)return'<p class="msg">'+esc(S.none)+'</p>';
+  var h='<div class="box"><table><tr><th>'+S.date+'</th><th>'+S.time+'</th><th>'+S.course+'</th><th>'+S.sec+'</th>'+(o.y?'<th>'+S.year+'</th>':"")+'<th>'+S.type+'</th><th>'+S.inst+'</th></tr>';
+  rows.forEach(function(r){
+    var cf=o.cf&&r.d&&r.a>=0&&rows.some(function(p){return p!==r&&p.d===r.d&&p.a===r.a});
+    h+='<tr><td>'+esc(snvDate(r.d))+'</td><td>'+(r.a>=0?fmt(r.a):"—")+(cf?'<span class="cfl">'+esc(S.cf)+'</span>':"")+'</td><td><b>'+esc(r.c)+'</b> '+esc(r.n)+'</td><td>'+esc(r.s)+'</td>'+
+      (o.y?'<td>'+esc(L.year(r.y))+'</td>':"")+'<td>'+esc(r.t)+(r.sn?' <span class="kmeta">'+esc(r.sn)+'</span>':"")+'</td><td>'+esc((r.hh||[]).join(", "))+'</td></tr>'});
+  return h+'</table></div>'}
+function snvShowOgr(no){var P=DATA.ogrenci.people[no],S=L.sv;if(!P)return;var rows=[],miss=[];
+  P.courses.forEach(function(c){var r=EXK[c.code+"|"+c.sube];
+    if(!r){var ss=Object.keys(EXC[c.code]||{});if(ss.length===1)r=EXK[c.code+"|"+ss[0]]}
+    if(r)rows=rows.concat(r);else miss.push(c.code)});
+  rows=snvSort(snvMerge(rows,false));
+  var h='<div class="person"><div><h2>'+esc(P.name||no)+'</h2><p>'+esc([no].concat(P.info||[]).filter(Boolean).join(", "))+'</p></div></div>'+snvTable(rows,{cf:true});
+  if(miss.length)h+='<p class="kmeta">'+esc(S.miss(miss.length))+': '+esc(miss.join(", "))+'</p>';
+  $("snvRes").innerHTML=h}
+function snvShowHoca(b){var H=EXH[b];if(!H)return;var rows=snvSort(snvMerge(H.r,false));
+  $("snvRes").innerHTML='<div class="person"><div><h2>'+esc(H.h)+'</h2><p>'+esc(L.sv.cnt(rows.length))+'</p></div></div>'+snvTable(rows,{cf:true})}
+function snvShowBol(){var S=L.sv;if(!SNV.prog){$("snvRes").innerHTML="";return}
+  var rows=DATA.sinav.ex.filter(function(o){return o.p===SNV.prog&&(!SNV.sin||o.y===SNV.sin)});
+  rows=snvSort(snvMerge(rows,true));
+  $("snvRes").innerHTML='<div class="person"><div><h2>'+esc(SNV.prog)+'</h2><p>'+esc(SNV.sin?L.year(SNV.sin):S.allY)+'</p></div></div>'+snvTable(rows,{y:true})}
+function snvRefresh(){var c=SNV.cur,R=$("snvRes");if(!R)return;
+  if(SNV.v==="bolum")return snvShowBol();
+  if(!c){R.innerHTML="";return}
+  if(c.k==="ogr")snvShowOgr(c.key);else snvShowHoca(c.key)}
+function snvFillSin(){var p=$("snvProg").value,ys=[];
+  DATA.sinav.ex.forEach(function(o){if(o.p===p&&o.y&&ys.indexOf(o.y)<0)ys.push(o.y)});
+  ys.sort(function(a,b){return(+a||99)-(+b||99)||a.localeCompare(b,"tr")});
+  $("snvSin").innerHTML='<option value="">'+esc(L.sv.allY)+'</option>'+ys.map(function(y){return'<option value="'+esc(y)+'">'+esc(L.year(y))+'</option>'}).join("");
+  $("snvSin").classList.toggle("hidden",!p)}
+function snvList(){return SNV.v==="ogr"?(DATA.ogrenci.list||[]):EXHL}
+function snvSugDraw(){var s=$("snvSug"),t=SNV.q.trim();if(!s)return;
+  if(t.length<2){s.classList.add("hidden");return}
+  var h=snvFind(snvList(),t).slice(0,12);if(!h.length){s.classList.add("hidden");return}
+  s.innerHTML=h.map(function(p){return'<button type="button" data-pk="'+esc(p.k)+'">'+esc(p.label)+'</button>'}).join("");s.classList.remove("hidden")}
+function snvPick(k){var s=$("snvSug");if(s)s.classList.add("hidden");
+  if(SNV.v==="ogr"){var P=DATA.ogrenci.people[k];if(!P)return;$("snvQ").value=SNV.q=P.name||k;SNV.cur={k:"ogr",key:k}}
+  else{var H=EXH[k];if(!H)return;$("snvQ").value=SNV.q=H.h;SNV.cur={k:"hoca",key:k}}
+  snvRefresh()}
+function snvGo(){var S=L.sv,t=$("snvQ").value.trim(),R=$("snvRes");SNV.q=t;$("snvSug").classList.add("hidden");
+  if(!t){SNV.cur=null;R.innerHTML='<p class="msg">'+esc(S.empty)+'</p>';return}
+  if(SNV.v==="ogr"){var no=t.toLocaleUpperCase("tr");if(DATA.ogrenci.people[no])return snvPick(no)}
+  var h=snvFind(snvList(),t);
+  if(h.length===1)return snvPick(h[0].k);
+  SNV.cur=null;
+  if(!h.length){R.innerHTML='<p class="msg">'+esc(S.nf(t))+'</p>';return}
+  R.innerHTML='<p class="kmeta">'+esc(S.multi(h.length))+'</p><div class="box"><table>'+h.slice(0,60).map(function(p){return'<tr><td><button type="button" class="hl" data-pk="'+esc(p.k)+'">'+esc(p.label)+'</button></td></tr>'}).join("")+'</table></div>'}
+function renderSinav(){
+  snvInit();var S=L.sv;
+  if(!SNV.v||(SNV.v==="ogr"&&!DATA.ogrenci))SNV.v=DATA.ogrenci?"ogr":"hoca";
+  var v=SNV.v,views=[];
+  if(DATA.ogrenci)views.push(["ogr",S.vOgr]);views.push(["hoca",S.vHoca],["bolum",S.vBol]);
+  var h='<div class="tabs small" role="tablist">'+views.map(function(x){return'<button type="button" role="tab" data-v="'+x[0]+'" aria-selected="'+(x[0]===v)+'">'+esc(x[1])+'</button>'}).join("")+'</div>';
+  if(v!=="bolum")h+='<div class="searchbox"><div class="search"><input id="snvQ" autocomplete="off" placeholder="'+esc(v==="ogr"?S.phOgr:S.phHoca)+'"><button type="button" class="btn" id="snvGo">'+esc(S.go)+'</button></div><div class="sug hidden" id="snvSug"></div></div>';
+  var sel="";
+  if(v==="bolum")sel+='<select id="snvProg" aria-label="'+esc(S.vBol)+'"><option value="">'+esc(S.selProg)+'</option>'+SNVP.map(function(p){return'<option>'+esc(p)+'</option>'}).join("")+'</select><select id="snvSin" class="hidden" aria-label="'+esc(S.year)+'"></select>';
+  if(SNVT.length>1)sel+='<select id="snvTip" aria-label="'+esc(S.type)+'"><option value="">'+esc(S.allT)+'</option>'+SNVT.map(function(t){return'<option>'+esc(t)+'</option>'}).join("")+'</select>';
+  h+=(sel?'<div class="sel">'+sel+'</div>':"")+'<div id="snvRes"></div>';
+  $("snv").innerHTML=h;
+  if($("snvQ"))$("snvQ").value=SNV.q;
+  if($("snvTip"))$("snvTip").value=SNV.tip;
+  if(v==="bolum"){$("snvProg").value=SNV.prog;snvFillSin();$("snvSin").value=SNV.sin}
+  snvRefresh()}
+(function(){var SN=$("snv");
+  SN.addEventListener("click",function(e){var t=e.target,vb=t.closest("[data-v]");
+    if(vb){SNV.v=vb.dataset.v;SNV.cur=null;SNV.q="";SNV.prog="";SNV.sin="";renderSinav();return}
+    var pk=t.closest("[data-pk]");if(pk){snvPick(pk.dataset.pk);return}
+    if(t.closest("#snvGo")){snvGo();return}
+    if(!t.closest(".searchbox")&&$("snvSug"))$("snvSug").classList.add("hidden")});
+  SN.addEventListener("input",function(e){if(e.target.id!=="snvQ")return;SNV.q=e.target.value;snvSugDraw()});
+  SN.addEventListener("keydown",function(e){if(e.target.id==="snvQ"&&e.key==="Enter"){e.preventDefault();snvGo()}
+    if(e.key==="Escape"&&$("snvSug"))$("snvSug").classList.add("hidden")});
+  SN.addEventListener("change",function(e){var i=e.target.id;
+    if(i==="snvTip"){SNV.tip=e.target.value;snvRefresh()}
+    else if(i==="snvProg"){SNV.prog=e.target.value;SNV.sin="";snvFillSin();snvRefresh()}
+    else if(i==="snvSin"){SNV.sin=e.target.value;snvRefresh()}});
+})();
 [].forEach.call(document.querySelectorAll(".pr"),function(b){b.addEventListener("click",function(){print()})});
-setMode(DATA.ogrenci?"ogrenci":DATA.sinif?"sinif":"hoca");
+setMode(DATA.ogrenci?"ogrenci":DATA.sinif?"sinif":DATA.hoca?"hoca":"sinav");
 applyLang();
 </script>
 </template>
@@ -541,9 +661,9 @@ function toMin(v){
   if((ap==="pm"||ap==="ös")&&h<12)h+=12;if((ap==="am"||ap==="öö")&&h===12)h=0;return h*60+ +m[2];
 }
 const $=id=>document.getElementById(id);
-let sRows=[],hAll=[],hRows=[],aRows=[],aWeeks=0;
+let sRows=[],hAll=[],hRows=[],aRows=[],aWeeks=0,eRows=[];
 const status=(p,t,c)=>{const s=$(p?p+"Status":"status");s.textContent=t;s.className=(p?"info ":"status ")+(c||"")};
-const refresh=()=>{$("build").disabled=!(sRows.length||hAll.length||aRows.length)};
+const refresh=()=>{$("build").disabled=!(sRows.length||hAll.length||aRows.length||eRows.length)};
 
 const attKey=k=>norm(k).replace(/_\d{3,}$/,"").replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"");
 function readExcel(file,cb,p,keyFn){keyFn=keyFn||cleanKey;
@@ -590,13 +710,13 @@ $("sFile").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;
   readExcel(f,rows=>{
     sRows=rows.filter(x=>str(x.ogrenci_no));
     if(!sRows.length){status("s","Bu dosyada 'Öğrenci_No' sütunu yok. Öğrenci Excel'ini seçtiğinizden emin olun.","err");sRows=[];refresh();$("sInfo").textContent="";return}
-    $("sInfo").textContent=`${new Set(sRows.map(x=>str(x.ogrenci_no))).size} öğrenci, ${sRows.length} satır okundu.`;refresh();
+    $("sInfo").textContent=`${new Set(sRows.map(x=>str(x.ogrenci_no))).size} öğrenci, ${sRows.length} satır okundu.`+(studentName(sRows[0])?"":" Dikkat: ad-soyad sütunu bulunamadı. Sütunlar: "+Object.keys(sRows[0]).join(", ")+".");refresh();
   },"s")});
 function buildStudents(){
   const withName=$("sName").checked,withProg=$("sProg").checked,people={};
   sRows.forEach(x=>{
     const no=str(x.ogrenci_no).toLocaleUpperCase("tr");
-    const P=people[no]||(people[no]={name:withName?`${str(x.adi)} ${str(x.soyadi)}`.trim():"",info:withProg?[str(x.program),sinTR(normSin(x.sinif)),str(x.dh_donemi)].filter(Boolean):[],courses:[],_ck:{},_slots:[],_seen:{}});
+    const P=people[no]||(people[no]={name:withName?studentName(x):"",info:withProg?[str(x.program),sinTR(normSin(x.sinif)),str(x.dh_donemi)].filter(Boolean):[],courses:[],_ck:{},_slots:[],_seen:{}});
     const ck=`${str(x.dh_kodu)}|${str(x.dh_sube_kodu)}`;
     if(P._ck[ck]===undefined){P._ck[ck]=P.courses.length;P.courses.push({id:str(x.dh_id),code:str(x.dh_kodu),name:str(x.dh_adi),sube:str(x.dh_sube_kodu),kredi:num(x.dk_kredi),akts:num(x.dk_akts)})}
     addSlot(P,P._ck[ck],x);
@@ -632,7 +752,7 @@ function addAttendance(people){
   aRows.forEach(x=>{
     const no=str(x.ogrenci_no).toLocaleUpperCase("tr");
     let P=people[no];
-    if(!P){P=people[no]={name:withName?`${str(x.ogrenci_adi)} ${str(x.ogrenci_soyadi)}`.trim():"",
+    if(!P){P=people[no]={name:withName?studentName(x):"",
       info:withProg?[str(x.bolum),str(x.sinif)&&(/^\d+$/.test(str(x.sinif))?str(x.sinif)+". sınıf":str(x.sinif)),str(x.donem)].filter(Boolean):[],courses:[],blocks:[],hours:0};extra++}
     const id=str(x.ders_har_id),nm=str(x.ders);
     let ci=P.courses.findIndex(c=>id&&c.id===id);
@@ -680,6 +800,41 @@ function buildHoca(){
   finish(people);
   const list=Object.keys(people).map(k=>({k,label:people[k].name,s:norm(people[k].name)})).sort((a,b)=>a.s.localeCompare(b.s,"tr"));
   return {counts,people,list};
+}
+
+/* ---------- Sınav ---------- */
+function studentName(x){
+  const g=(...ks)=>{for(const k of ks){const v=str(x[k]);if(v)return v}return""};
+  const a=g("adi","ad","ogrenci_adi","ogrenci_ad","ogr_adi","ogr_ad","isim","ismi"),
+        b=g("soyadi","soyad","ogrenci_soyadi","ogrenci_soyad","ogr_soyadi","ogr_soyad","soyisim","soyismi");
+  if(a||b)return(a+" "+b).trim();
+  return g("adi_soyadi","ad_soyad","ogrenci_adi_soyadi","ogrenci_ad_soyad","adi_ve_soyadi","ad_ve_soyad","ogrenci_ismi","isim_soyisim","ogrenci_adi_ve_soyadi");
+}
+function parseDate(v){
+  if(v===""||v==null)return"";
+  if(typeof v==="number"&&v>20000)return new Date(Math.round((v-25569)*864e5)).toISOString().slice(0,10);
+  const t=String(v).trim();let m=t.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{4})/);
+  if(m)return m[3]+"-"+m[2].padStart(2,"0")+"-"+m[1].padStart(2,"0");
+  m=t.match(/^(\d{4})-(\d{2})-(\d{2})/);return m?m[0]:"";
+}
+$("eFile").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;status("e","");
+  readExcel(f,rows=>{
+    eRows=rows.filter(x=>str(x.dh_kodu)&&str(x.snv_tarihi)!=="");
+    if(!eRows.length){status("e","Bu dosyada 'DH_Kodu' ve 'SNV_Tarihi' sütunları bulunamadı. Sınav Excel'ini seçtiğinizden emin olun.","err");eRows=[];refresh();$("eInfo").textContent="";return}
+    $("eInfo").textContent=`${new Set(eRows.map(x=>str(x.dh_kodu))).size} ders, ${eRows.length} sınav satırı okundu.`;refresh();
+  },"e")});
+function buildSinav(){
+  const seen=new Set(),ex=[];
+  eRows.forEach(x=>{
+    const code=str(x.dh_kodu),a=toMin(x.snv_saati),un=str(x.dh_o_e_unvan),h=str(x.dh_ogretim_uyesi)||str(x.dh_ogretim_elemani);
+    let b=h;if(un&&h.toLocaleLowerCase("tr").startsWith(un.toLocaleLowerCase("tr")))b=h.slice(un.length).trim();
+    const o={k:code+"|"+str(x.dh_sube_kodu),c:code,n:str(x.dh_adi),s:str(x.dh_sube_kodu),f:str(x.dh_fakultesi),p:str(x.dh_programi),y:normSin(x.dh_sinifi),
+      h,b,t:str(x.snv_tipi)||str(x.snv_adi),sn:str(x.snv_adi),d:parseDate(x.snv_tarihi),a:a==null?-1:a};
+    const sig=[o.k,o.p,o.y,o.h,o.t,o.sn,o.d,o.a].join("|");if(seen.has(sig))return;seen.add(sig);
+    if(!o.h){delete o.h;delete o.b}if(!o.f)delete o.f;if(!o.sn||o.sn===o.t)delete o.sn;
+    ex.push(o)});
+  ex.sort((p,q)=>(p.d||"9").localeCompare(q.d||"9")||p.a-q.a||p.c.localeCompare(q.c,"tr"));
+  return{ex};
 }
 
 /* ---------- Bölüm ve sınıf ---------- */
@@ -750,6 +905,7 @@ $("build").addEventListener("click",()=>{
     parts.unshift(Object.keys(data.ogrenci.people).length+" öğrenci")}
   if((hAll.length||sRows.some(x=>str(x.sinif)))&&$("sSinif").checked){data.sinif=buildSinif();parts.push(Object.keys(data.sinif).length+" bölüm")}
   if(hRows.length&&$("hTab").checked){data.hoca=buildHoca();parts.push(data.hoca.list.length+" öğretim elemanı")}
+  if(eRows.length){data.sinav=buildSinav();parts.push(data.sinav.ex.length+" sınav kaydı")}
   if(data.hoca&&data.ogrenci&&$("hRoster").checked)data.roster=buildRoster();
   if(!parts.length){status("","Dosyaya eklenecek bir şey yok. En az bir görünümü açık bırakın.","err");return}
   download(data,"ders-programi.html",parts.join(", "));
@@ -765,7 +921,7 @@ $("build").addEventListener("click",()=>{
     sharepointSite:"https://areledutr.sharepoint.com/sites/DHMOrtakAlan",
     kopruBetigi:"https://gist.githubusercontent.com/ydamga/fda280b2890ad2008c3ac20871e5303e/raw/ders-programi-kopru.user.js",
     // Normalde boş bırakın (türler sütunlardan anlaşılır, her türün en yenisi kullanılır)
-    dosyalar:{ogrenci:"",ogretimElemani:"",yoklama:""},
+    dosyalar:{ogrenci:"",ogretimElemani:"",yoklama:"",sinav:""},
     secenekler:{ogrenciAdSoyad:true,programDonem:true,dersHocalari:true,bolumSinif:true,hocaSekmesi:true,ogrenciSayisi:true,ogrenciListeleri:true}
   };
 
@@ -799,6 +955,7 @@ $("build").addEventListener("click",()=>{
   function kk(k){return norm(k).replace(/_\d+$/,"").replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"")}
   function sheetType(h){var has=function(k){return h.indexOf(k)>-1};
     if(has("ogrenci_no")&&h.some(function(x){return/^hafta_?1$/.test(x)}))return"yoklama";
+    if(!has("ogrenci_no")&&has("snv_tarihi")&&has("dh_kodu"))return"sinav";
     if(has("ogrenci_no")&&has("dp_gun"))return"ogrenci";
     if(!has("ogrenci_no")&&has("dh_kodu")&&(has("dh_o_e_ad")||has("dh_dersi_alan_ogr_say")||has("ogretim_uyesi_ad_soyad")))return"ogretimElemani";
     return null}
@@ -861,13 +1018,13 @@ $("build").addEventListener("click",()=>{
       types.forEach(function(t){if(chosen[t]||(only&&t!==only))return;chosen[t]={f:f,buf:types.length>1?subset(buf,map[t]):buf}})}
     for(var t in AYAR.dosyalar){var want=AYAR.dosyalar[t];if(!want)continue;
       var f=files.find(function(x){return norm(x.name)===norm(want)});if(!f)throw new Error("Klasörde bulunamadı: "+want);await take(f,t)}
-    for(var i=0;i<files.length&&!(chosen.ogrenci&&chosen.ogretimElemani&&chosen.yoklama);i++)await take(files[i]);
-    if(!chosen.ogrenci&&!chosen.ogretimElemani)throw new Error("Klasörde öğrenci ya da öğretim elemanı raporu bulunamadı.");
+    for(var i=0;i<files.length&&!(chosen.ogrenci&&chosen.ogretimElemani&&chosen.yoklama&&chosen.sinav);i++)await take(files[i]);
+    if(!chosen.ogrenci&&!chosen.ogretimElemani&&!chosen.sinav)throw new Error("Klasörde öğrenci ya da öğretim elemanı raporu bulunamadı.");
     wait("Program hazırlanıyor…");applyOptions();
     // Önceki okumadan kalan veriyi ve durum yazılarını temizle (güncelleme sırasında eski veri karışmasın)
-    sRows=[];hAll=[];hRows=[];aRows=[];aWeeks=0;
-    ["sInfo","sStatus","hInfo","hStatus","aInfo","aStatus"].forEach(function(id){$(id).textContent=""});
-    var pre={ogrenci:"s",ogretimElemani:"h",yoklama:"a"},latest=0;
+    sRows=[];hAll=[];hRows=[];aRows=[];aWeeks=0;eRows=[];
+    ["sInfo","sStatus","hInfo","hStatus","aInfo","aStatus","eInfo","eStatus"].forEach(function(id){$(id).textContent=""});
+    var pre={ogrenci:"s",ogretimElemani:"h",yoklama:"a",sinav:"e"},latest=0;
     for(var ty in pre)if(chosen[ty]){var ext=(chosen[ty].f.name.match(/\.[^.]+$/)||[".xlsx"])[0];
       await feed(pre[ty],ty+ext,chosen[ty].buf);latest=Math.max(latest,new Date(chosen[ty].f.modified).getTime()||0)}
     window.__dataUpdated=latest?new Date(latest).toISOString():undefined;
