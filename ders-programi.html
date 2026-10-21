@@ -73,10 +73,10 @@ body.g-done{overflow:hidden}
 </style>
 </head>
 <body>
-<div id="gBar"><a class="home" href="index.html" title="DHM araçları">DHM</a><b>Ders programı</b><span id="gMsg" role="status"></span><span class="sp"></span><button type="button" class="act" id="gRefresh" title="Raporları SharePoint'ten yeniden oku ve bilgisayarda sakla">Güncelle</button></div>
+<div id="gBar"><a class="home" href="index.html" title="ÖDHM araçları">ÖDHM</a><b>Ders programı</b><span id="gMsg" role="status"></span><span class="sp"></span><button type="button" class="act" id="gRefresh" title="Raporları SharePoint'ten yeniden oku ve bilgisayarda sakla">Güncelle</button></div>
 <div id="gLive" hidden></div>
 <div class="wrap">
-  <a class="home" href="index.html">← DHM araçları</a>
+  <a class="home" href="index.html">← ÖDHM araçları</a>
   <h1>Program hazırlayıcı</h1>
   <p class="lead">Excel dosyalarını yükleyin; tek bir paylaşılabilir dosya oluşur. Dosyanın üstündeki düğmelerle öğrenci ve öğretim elemanı görünümleri arasında geçilir. Öğrenci görünümünde numarayla ya da bölüm ve sınıf seçerek program açılır. Sayfada Türkçe/İngilizce geçiş düğmeleri bulunur. Excel dosyaları bu bilgisayardan dışarı çıkmaz.</p>
 
@@ -946,7 +946,7 @@ $("build").addEventListener("click",()=>{
   var $=function(i){return document.getElementById(i)};
   var box=$("gLive"),bar=$("gBar"),quiet=false,busy=false;
   function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
-  function card(html){box.innerHTML='<div class="g-card"><a class="home" href="index.html">← DHM araçları</a><h1>'+esc(AYAR.baslikTR)+'</h1>'+html+'</div>';box.hidden=false}
+  function card(html){box.innerHTML='<div class="g-card"><a class="home" href="index.html">← ÖDHM araçları</a><h1>'+esc(AYAR.baslikTR)+'</h1>'+html+'</div>';box.hidden=false}
   // Güncelleme sırasında mevcut program görünür kalır; durum üst çubukta yazılır
   function msg(t,err){var m=$("gMsg");m.textContent=t||"";m.className=err?"err":"";m.title=t||""}
   function wait(t){if(quiet)msg(t);else card('<p class="g-msg"><span class="g-spin"></span>'+esc(t)+'</p>')}
