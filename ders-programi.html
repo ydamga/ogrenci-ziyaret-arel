@@ -4,13 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Haftalık Ders Programı</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
-:root{--bg:#E9EDF3;--surface:#fff;--ink:#18223A;--muted:#5C6780;--line:#D3DAE5;--accent:#2F4FD8;--ok:#16875A;--warn:#B42318}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5}
+:root{--bg:#F4F7FB;--surface:#fff;--ink:#0D1B2A;--muted:#5B6B7C;--line:#DCE3EC;--accent:#1E2A38;--gold:#C9A86A;--gold-d:#8F6F2E;--ok:#1B7A46;--warn:#B3261E}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5}
+.home{display:inline-block;margin:0 0 12px;color:var(--gold-d);font-weight:600;text-decoration:none}
+.home:hover{text-decoration:underline}
 .wrap{max-width:980px;margin:0 auto;padding:32px 20px}
 h1{font-size:28px;margin:0 0 6px;letter-spacing:-.01em}
-p.lead{color:var(--muted);margin:0 0 22px;max-width:72ch}
+p.lead{color:var(--ink);margin:0 0 22px;max-width:72ch}
 .cols{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 @media (max-width:760px){.cols{grid-template-columns:1fr}}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px}
@@ -20,10 +23,12 @@ p.lead{color:var(--muted);margin:0 0 22px;max-width:72ch}
 .step > b{display:block;font-size:14px;margin-bottom:6px}
 label.opt{display:flex;gap:10px;align-items:flex-start;margin:6px 0;cursor:pointer;font-size:14px}
 label.opt small{display:block;color:var(--muted)}
+label.opt input{accent-color:var(--accent)}
 input[type=text]{width:100%;box-sizing:border-box;font:inherit;padding:9px 11px;border:1px solid var(--line);border-radius:9px}
 .note{color:var(--muted);font-size:13px;margin:8px 0 0}
 .btn{font:inherit;font-weight:700;border:0;border-radius:9px;padding:11px 18px;background:var(--accent);color:#fff;cursor:pointer;width:100%}
-.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:disabled{opacity:1;background:var(--line);color:var(--muted);cursor:not-allowed}
+#build:not(:disabled)+#buildHint{display:none}
 .btn{transition:transform 160ms cubic-bezier(.23,1,.32,1),opacity 150ms ease}
 .btn:active:not(:disabled){transform:scale(.97)}
 .status{margin-top:10px;font-weight:600;font-size:14px}
@@ -37,7 +42,7 @@ body.g-live>.wrap{display:none}
 .g-card{max-width:560px;margin:12vh auto 0;padding:28px 30px;background:var(--surface);border:1px solid var(--line);border-radius:14px}
 .g-card h1{font-size:24px;margin:0 0 14px;text-align:center}
 .g-msg{color:var(--muted);margin:0 0 10px}.g-msg b{color:var(--ink)}
-.g-msg a,.g-steps a{color:var(--accent);font-weight:600}
+.g-msg a,.g-steps a{color:var(--gold-d);font-weight:600}
 .g-err{color:var(--warn);font-weight:600;margin:0 0 10px}
 .g-det{white-space:pre-wrap;font-size:12px;color:var(--muted);background:var(--bg);border-radius:8px;padding:10px;margin:0 0 10px;max-height:160px;overflow:auto}
 .g-steps{margin:0 0 16px;padding-left:22px;color:var(--ink)}.g-steps li{margin:6px 0}
@@ -49,6 +54,7 @@ body.g-live>.wrap{display:none}
 @media (prefers-reduced-motion:reduce){.g-spin{animation:none}}
 body.g-done #gBar{display:flex;position:fixed;top:0;left:0;right:0;height:50px;z-index:10;align-items:center;gap:10px;padding:0 14px;background:var(--surface);border-bottom:1px solid var(--line);box-sizing:border-box}
 #gBar b{font-size:15px;margin-right:4px}
+#gBar .home{margin:0}
 #gBar .seg{display:inline-flex;background:var(--bg);border-radius:9px;padding:3px;gap:3px}
 #gBar button{font:inherit;font-size:14px;font-weight:600;border:0;background:none;color:var(--muted);padding:6px 12px;border-radius:7px;cursor:pointer}
 #gBar .seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
@@ -67,9 +73,10 @@ body.g-done{overflow:hidden}
 </style>
 </head>
 <body>
-<div id="gBar"><b>Ders programı</b><span id="gMsg" role="status"></span><span class="sp"></span><button type="button" class="act" id="gRefresh" title="Raporları SharePoint'ten yeniden oku ve bilgisayarda sakla">Güncelle</button></div>
+<div id="gBar"><a class="home" href="index.html" title="DHM araçları">DHM</a><b>Ders programı</b><span id="gMsg" role="status"></span><span class="sp"></span><button type="button" class="act" id="gRefresh" title="Raporları SharePoint'ten yeniden oku ve bilgisayarda sakla">Güncelle</button></div>
 <div id="gLive" hidden></div>
 <div class="wrap">
+  <a class="home" href="index.html">← DHM araçları</a>
   <h1>Program hazırlayıcı</h1>
   <p class="lead">Excel dosyalarını yükleyin; tek bir paylaşılabilir dosya oluşur. Dosyanın üstündeki düğmelerle öğrenci ve öğretim elemanı görünümleri arasında geçilir. Öğrenci görünümünde numarayla ya da bölüm ve sınıf seçerek program açılır. Sayfada Türkçe/İngilizce geçiş düğmeleri bulunur. Excel dosyaları bu bilgisayardan dışarı çıkmaz.</p>
 
@@ -120,6 +127,7 @@ body.g-done{overflow:hidden}
     <div class="step"><b>Sayfa başlığı (Türkçe)</b><input type="text" id="title" value="Haftalık Ders Programı"></div>
     <div class="step"><b>Sayfa başlığı (İngilizce)</b><input type="text" id="titleEn" value="Weekly Course Schedule"></div>
     <button class="btn" id="build" disabled>Paylaşılabilir dosyayı oluştur</button>
+    <p class="note" id="buildHint">En az bir Excel dosyası yükleyince açılır.</p>
     <div class="status" id="status"></div>
   </section>
 
@@ -127,19 +135,19 @@ body.g-done{overflow:hidden}
 
 <template id="viewer">
 <style>
-:root{--bg:#E9EDF3;--surface:#fff;--ink:#18223A;--muted:#5C6780;--line:#D3DAE5;--accent:#2F4FD8;--hover:#EEF2FB;--warn:#B42318;--warn-bg:#FDECEA;
+:root{--bg:#F4F7FB;--surface:#fff;--ink:#0D1B2A;--muted:#5B6B7C;--line:#DCE3EC;--accent:#1E2A38;--hover:#EEF1F6;--warn:#B42318;--warn-bg:#FDECEA;
 --c0:#DCE6FF;--c0b:#2F4FD8;--c1:#D8F3E6;--c1b:#16875A;--c2:#FFE9CC;--c2b:#B7650B;--c3:#F6DDF3;--c3b:#A0328F;--c4:#DDF1F7;--c4b:#127191;--c5:#EEE6FF;--c5b:#6A3FC8;--c6:#FFE0DB;--c6b:#C2412D;--c7:#EAF2D2;--c7b:#5E7A12}
-@media (prefers-color-scheme:dark){:root{--bg:#10151F;--surface:#18202E;--ink:#E7ECF5;--muted:#9AA5BB;--line:#2A3446;--accent:#7C95FF;--hover:#222C3E;--warn:#FF8A7A;--warn-bg:#3A1C1A;
+@media (prefers-color-scheme:dark){:root{--bg:#10151F;--surface:#18202E;--ink:#E7ECF5;--muted:#9AA5BB;--line:#2A3446;--accent:#C9A86A;--hover:#222C3E;--warn:#FF8A7A;--warn-bg:#3A1C1A;
 --c0:#23304F;--c0b:#8EA6FF;--c1:#1C3A2F;--c1b:#62D39F;--c2:#3D2E1B;--c2b:#F2B35E;--c3:#3A2238;--c3b:#EE92DF;--c4:#1B3440;--c4b:#6CCBEA;--c5:#2C2448;--c5b:#B79CFF;--c6:#40241F;--c6b:#FF9C87;--c7:#2D3620;--c7b:#B7D66A}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:15px;line-height:1.5}
 .wrap{max-width:1180px;margin:0 auto;padding:28px 20px 60px}
 .top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
-h1{font-size:clamp(24px,4vw,34px);font-weight:800;letter-spacing:-.02em;margin:0 0 16px}
+h1{font-size:clamp(24px,4vw,32px);font-weight:800;letter-spacing:-.02em;margin:0 0 16px}
 .upd{margin:-12px 0 16px;color:var(--muted);font-size:13px}
 .tabs{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:4px;gap:4px;margin:0 12px 14px 0;vertical-align:top}
 .tabs button{font:inherit;font-weight:700;border:0;background:none;color:var(--muted);padding:8px 16px;border-radius:8px;cursor:pointer}
-.tabs button[aria-selected="true"]{background:var(--accent);color:#fff}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--surface)}
 .tabs button,.btn,.x,.back button{transition:transform 160ms cubic-bezier(.23,1,.32,1),background-color 150ms ease,color 150ms ease}
 .tabs button:active,.btn:active,.x:active,.back button:active{transform:scale(.97)}
 .tabs.small{border-radius:9px;padding:3px}
@@ -156,7 +164,7 @@ h1{font-size:clamp(24px,4vw,34px);font-weight:800;letter-spacing:-.02em;margin:0
 .sel select#prog{flex:1 1 260px;max-width:420px}
 .chk{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--muted);cursor:pointer;flex-basis:100%}
 .chk input{width:16px;height:16px;accent-color:var(--accent)}
-.btn{font:inherit;font-weight:700;border:0;border-radius:9px;padding:10px 16px;background:var(--accent);color:#fff;cursor:pointer;white-space:nowrap}
+.btn{font:inherit;font-weight:700;border:0;border-radius:9px;padding:10px 16px;background:var(--accent);color:var(--surface);cursor:pointer;white-space:nowrap}
 .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
 .sug{position:absolute;left:0;right:0;top:calc(100% + 4px);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:4px;z-index:5;max-height:320px;overflow:auto;box-shadow:0 8px 24px rgba(20,30,60,.12)}
 .sug button{display:block;width:100%;text-align:left;font:inherit;background:none;border:0;color:var(--ink);padding:8px 10px;border-radius:7px;cursor:pointer}
@@ -938,7 +946,7 @@ $("build").addEventListener("click",()=>{
   var $=function(i){return document.getElementById(i)};
   var box=$("gLive"),bar=$("gBar"),quiet=false,busy=false;
   function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
-  function card(html){box.innerHTML='<div class="g-card"><h1>'+esc(AYAR.baslikTR)+'</h1>'+html+'</div>';box.hidden=false}
+  function card(html){box.innerHTML='<div class="g-card"><a class="home" href="index.html">← DHM araçları</a><h1>'+esc(AYAR.baslikTR)+'</h1>'+html+'</div>';box.hidden=false}
   // Güncelleme sırasında mevcut program görünür kalır; durum üst çubukta yazılır
   function msg(t,err){var m=$("gMsg");m.textContent=t||"";m.className=err?"err":"";m.title=t||""}
   function wait(t){if(quiet)msg(t);else card('<p class="g-msg"><span class="g-spin"></span>'+esc(t)+'</p>')}
