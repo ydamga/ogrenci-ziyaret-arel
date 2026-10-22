@@ -229,7 +229,22 @@ body.mo{overflow:hidden}
 .kmeta{color:var(--muted);font-size:13px;margin:2px 0 8px}
 .cfl{display:inline-block;font-size:11.5px;font-weight:700;padding:1px 7px;border-radius:20px;background:var(--warn-bg);color:var(--warn);margin-left:6px;white-space:nowrap}
 #snv .tabs.small{margin-bottom:12px}
-@media print{.searchbox,.sel,.tabs,.back,h1,.pr{display:none!important}.tt{min-width:0!important}
+.tip{margin:6px 2px 0;color:var(--muted);font-size:13px}
+.chips{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:-8px 0 20px}
+.chip{display:inline-flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:3px 3px 3px 11px;font-size:14px}
+.chip .sw{margin:0}.chip small{color:var(--muted)}
+.chip .x{font-size:17px;padding:1px 7px;border-radius:20px}
+.clr{font:inherit;font-size:13px;background:none;border:0;color:var(--muted);cursor:pointer;text-decoration:underline;text-underline-offset:2px;padding:4px 6px}
+.clr:hover{color:var(--ink)}
+.mdays th,.mdays td{text-align:center}
+.mdays th:first-child,.mdays td:first-child{text-align:left}
+.mdays td small{display:block;color:var(--muted);font-size:12px}
+.mdays td.off{color:var(--muted);opacity:.6}
+.mdays .on{display:inline-block;font-weight:700;font-variant-numeric:tabular-nums;padding:1px 8px;border-radius:6px;background:var(--c1);color:var(--c1b)}
+.mdays td.sum{font-weight:700;font-variant-numeric:tabular-nums}
+.mdays tfoot td{border-top:1px solid var(--line);border-bottom:0;color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums}
+.mdays tfoot td.all{color:var(--c1b)}
+@media print{.searchbox,.sel,.tabs,.back,h1,.pr,.chip .x,.clr{display:none!important}.tt{min-width:0!important}
   body.mo>.wrap,body.mo .mtools,body.mo .x{display:none!important}
   body.mo .ov{position:static;background:none;padding:0}body.mo .modal{max-height:none;box-shadow:none;border:0}body.mo .mb{overflow:visible}}
 </style>
@@ -248,6 +263,7 @@ body.mo{overflow:hidden}
   </div>
   <div class="tabs small" id="subtabs" role="tablist">
     <button type="button" role="tab" data-m="ogrenci" data-i="subNum"></button>
+    <button type="button" role="tab" data-m="coklu" data-i="subMulti"></button>
     <button type="button" role="tab" data-m="sinif" data-i="subSin"></button>
   </div>
   <div class="searchbox" id="numbox">
@@ -258,6 +274,14 @@ body.mo{overflow:hidden}
     <select id="prog"></select>
     <select id="sin"></select>
     <label class="chk hidden" id="minorBox"><input type="checkbox" id="minor"><span id="minorL"></span></label>
+  </div>
+  <div class="hidden" id="multi">
+    <div class="searchbox">
+      <div class="search"><input id="mq" autocomplete="off"><button class="btn" id="madd" data-i="add"></button></div>
+      <div class="sug hidden" id="msug" role="listbox"></div>
+      <p class="tip" data-i="mTip"></p>
+    </div>
+    <div class="chips" id="chips"></div>
   </div>
   <p class="back hidden" id="back"><button type="button" id="backBtn"></button></p>
   <p class="msg hidden" id="msg"></p>
@@ -275,6 +299,13 @@ body.mo{overflow:hidden}
       <div class="leg" id="leg"></div>
     </div>
   </div>
+  <div id="mres" class="hidden">
+    <div class="person"><div><h2 data-i="mDays"></h2><p id="mAll"></p></div>
+      <button class="btn ghost pr" data-i="print"></button></div>
+    <div class="box"><table class="mdays" id="mdays"></table></div>
+    <h3 data-i="mGrid"></h3>
+    <div class="box"><div class="tt" id="mtt"></div></div>
+  </div>
 </div>
 <div class="ov hidden" id="ov">
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="moT">
@@ -286,7 +317,11 @@ body.mo{overflow:hidden}
 <script>
 var DATA = __DATA__;
 var TX={
-tr:{days:["Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi","Pazar"],tabOgr:"Öğrenci",tabHoca:"Öğretim elemanı",tabSnv:"Sınavlar",sv:{vOgr:"Öğrenci",vHoca:"Akademisyen",vBol:"Bölüm",phOgr:"Öğrenci numarası veya adı",phHoca:"Ad veya soyad yazın",go:"Göster",selProg:"Bölüm seçin",allY:"Tüm sınıflar",allT:"Tüm sınavlar",date:"Tarih",time:"Saat",course:"Ders",sec:"Şube",year:"Sınıf",type:"Sınav",inst:"Öğretim elemanı",none:"Bu seçim için sınav bulunamadı.",empty:"Bir numara ya da ad yazın.",nf:function(t){return"“"+t+"” ile eşleşen kayıt bulunamadı."},multi:function(n){return n+" kişi eşleşti. Listeden seçin."},cf:"Çakışma",miss:function(n){return n+" dersin sınav bilgisi bulunamadı"},cnt:function(n){return n+" sınav"}},subNum:"Numarayla",subSin:"Bölüm ve sınıfla",
+tr:{days:["Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi","Pazar"],tabOgr:"Öğrenci",tabHoca:"Öğretim elemanı",tabSnv:"Sınavlar",sv:{vOgr:"Öğrenci",vHoca:"Akademisyen",vBol:"Bölüm",phOgr:"Öğrenci numarası veya adı",phHoca:"Ad veya soyad yazın",go:"Göster",selProg:"Bölüm seçin",allY:"Tüm sınıflar",allT:"Tüm sınavlar",date:"Tarih",time:"Saat",course:"Ders",sec:"Şube",year:"Sınıf",type:"Sınav",inst:"Öğretim elemanı",none:"Bu seçim için sınav bulunamadı.",empty:"Bir numara ya da ad yazın.",nf:function(t){return"“"+t+"” ile eşleşen kayıt bulunamadı."},multi:function(n){return n+" kişi eşleşti. Listeden seçin."},cf:"Çakışma",miss:function(n){return n+" dersin sınav bilgisi bulunamadı"},cnt:function(n){return n+" sınav"}},subNum:"Numarayla",subSin:"Bölüm ve sınıfla",subMulti:"Birden fazla öğrenci",
+ add:"Ekle",phMulti:"Öğrenci numarası veya adı",mTip:"Birden fazla numarayı virgülle, boşlukla ya da Excel'den alt alta kopyalayıp yapıştırarak tek seferde ekleyebilirsiniz.",
+ mDays:"Okulda olduğu günler",mGrid:"Birleşik haftalık program",backMulti:"← Öğrenci listesine dön",
+ mu:{stu:"Öğrenci",dCnt:"Gün",present:"Okulda olan",remove:"Listeden çıkar",clear:"Tümünü çıkar",lessons:function(n){return n+" ders"},
+   all:function(n,d){return(n===1?"Okulda olduğu günler: ":"Hepsinin okulda olduğu günler: ")+(d.length?d.join(", "):"yok")}},
  phNum:"Öğrenci numarası veya adı",phHoca:"Ad veya soyad yazın",go:"Programı göster",print:"Yazdır",list:"Ders listesi",attT:"Devam durumu",
  a:{course:"Ders",wk:"H",week:"Hafta",abs:"Devamsızlık",V:"Var",Y:"Yok",N:"Yoklama açılmadı",other:"Diğer",of:function(y,t){return y+" / "+t},tip:"Yoklama alınan haftalarda gelmediği hafta sayısı"},selProg:"Bölüm seçin",prog:"Bölüm",sin:"Sınıf",
  year:function(s){return/^\d+$/.test(s)?s+". sınıf":s},
@@ -298,8 +333,13 @@ tr:{days:["Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi","Pazar
  r:{title:"Dersi alan öğrenciler",sec:"Şube",n:function(n){return"Listede "+n+" öğrenci"},diff:function(n){return" (sistemdeki sayı: "+n+")"},
    filter:"Numara veya adla filtrele",no:"Öğrenci No",name:"Ad Soyad",prog:"Program",why:"Kayıt nedeni",close:"Kapat",open:"Öğrenci listesini aç",stu:"Ders programını aç",none:"Eşleşen öğrenci yok."},
  m:{emptyHoca:"Bir ad veya soyad yazın.",emptyNum:"Öğrenci numarası ya da adı yazın.",nfHoca:function(t){return"“"+t+"” ile eşleşen öğretim elemanı bulunamadı."},
-   nfNum:function(t){return"“"+t+"” numarası ya da adıyla eşleşen öğrenci bulunamadı."},multi:function(n){return n+" kişi eşleşti. Listeden seçin."},conflict:"Dikkat: programda çakışan dersler var (kırmızı çerçeveli bloklar)."}},
-en:{days:["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],tabOgr:"Student",tabHoca:"Instructor",tabSnv:"Exams",sv:{vOgr:"Student",vHoca:"Instructor",vBol:"Department",phOgr:"Student number or name",phHoca:"Type a first or last name",go:"Show",selProg:"Select department",allY:"All years",allT:"All exams",date:"Date",time:"Time",course:"Course",sec:"Section",year:"Year",type:"Exam",inst:"Instructor",none:"No exams found for this selection.",empty:"Please type a number or name.",nf:function(t){return"No match for “"+t+"”."},multi:function(n){return n+" people match. Pick one from the list."},cf:"Clash",miss:function(n){return"No exam information for "+n+(n===1?" course":" courses")},cnt:function(n){return n+(n===1?" exam":" exams")}},subNum:"By student number",subSin:"By department & year",
+   nfNum:function(t){return"“"+t+"” numarası ya da adıyla eşleşen öğrenci bulunamadı."},multi:function(n){return n+" kişi eşleşti. Listeden seçin."},conflict:"Dikkat: programda çakışan dersler var (kırmızı çerçeveli bloklar).",
+   nfMulti:function(t){return"Bulunamadı ya da birden fazla kişiyle eşleşti: "+t}}},
+en:{days:["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],tabOgr:"Student",tabHoca:"Instructor",tabSnv:"Exams",sv:{vOgr:"Student",vHoca:"Instructor",vBol:"Department",phOgr:"Student number or name",phHoca:"Type a first or last name",go:"Show",selProg:"Select department",allY:"All years",allT:"All exams",date:"Date",time:"Time",course:"Course",sec:"Section",year:"Year",type:"Exam",inst:"Instructor",none:"No exams found for this selection.",empty:"Please type a number or name.",nf:function(t){return"No match for “"+t+"”."},multi:function(n){return n+" people match. Pick one from the list."},cf:"Clash",miss:function(n){return"No exam information for "+n+(n===1?" course":" courses")},cnt:function(n){return n+(n===1?" exam":" exams")}},subNum:"By student number",subSin:"By department & year",subMulti:"Multiple students",
+ add:"Add",phMulti:"Student number or name",mTip:"Add several at once: separate numbers with commas or spaces, or paste a column copied from Excel.",
+ mDays:"Days on campus",mGrid:"Combined weekly schedule",backMulti:"← Back to student list",
+ mu:{stu:"Student",dCnt:"Days",present:"On campus",remove:"Remove from list",clear:"Remove all",lessons:function(n){return n+(n===1?" class":" classes")},
+   all:function(n,d){return(n===1?"Days on campus: ":"Days everyone is on campus: ")+(d.length?d.join(", "):"none")}},
  phNum:"Student number or name",phHoca:"Type a first or last name",go:"Show schedule",print:"Print",list:"Course list",attT:"Attendance",
  a:{course:"Course",wk:"W",week:"Week",abs:"Absences",V:"Present",Y:"Absent",N:"Not taken",other:"Other",of:function(y,t){return y+" / "+t},tip:"Weeks absent out of weeks attendance was taken"},selProg:"Select department",prog:"Department",sin:"Year",
  year:function(s){return/^\d+$/.test(s)?"Year "+s:s},
@@ -311,7 +351,8 @@ en:{days:["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"
  r:{title:"Enrolled students",sec:"Section",n:function(n){return n+(n===1?" student":" students")+" listed"},diff:function(n){return" (system count: "+n+")"},
    filter:"Filter by number or name",no:"Student No",name:"Name",prog:"Program",why:"Enrollment type",close:"Close",open:"Open student list",stu:"Open schedule",none:"No matching students."},
  m:{emptyHoca:"Please type a name.",emptyNum:"Please enter a student number or name.",nfHoca:function(t){return"No instructor matches “"+t+"”."},
-   nfNum:function(t){return"No student found matching “"+t+"”."},multi:function(n){return n+" people match. Pick one from the list."},conflict:"Note: this schedule has overlapping classes (blocks with a red border)."}}};
+   nfNum:function(t){return"No student found matching “"+t+"”."},multi:function(n){return n+" people match. Pick one from the list."},conflict:"Note: this schedule has overlapping classes (blocks with a red border).",
+   nfMulti:function(t){return"Not found or matched more than one person: "+t}}}};
 var LANG="tr",L=TX.tr;
 try{var sv=localStorage.getItem("dp-lang");if(sv==="en"||sv==="tr")LANG=sv}catch(e){}
 var MODE="",D=null,STATE={},lastOgr="",CUR=null,MSG=null,backTo="";
@@ -321,7 +362,7 @@ function norm(s){return String(s==null?"":s).toLocaleLowerCase("tr").normalize("
 function fmt(m){return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0")}
 function isElec(t){return/se[cç]meli/i.test(t||"")}function isComp(t){return/zorunlu/i.test(t||"")}
 function tur(t){return isComp(t)?L.comp:isElec(t)?L.elec:t}
-var q=$("q"),sug=$("sug"),act=-1,hits=[];
+var q=$("q"),sug=$("sug"),act=-1,hits=[],mq=$("mq"),msug=$("msug"),mact=-1,mhits=[];
 var hasOgr=!!(DATA.ogrenci||DATA.sinif);
 if(DATA.ogrenci&&!DATA.ogrenci.list){var SP=DATA.ogrenci.people;
   DATA.ogrenci.list=Object.keys(SP).filter(function(k){return SP[k].name}).map(function(k){var P=SP[k];
@@ -330,7 +371,8 @@ if(DATA.ogrenci&&!DATA.ogrenci.list){var SP=DATA.ogrenci.people;
   if(t==="ogr"?!hasOgr:t==="hoca"?!DATA.hoca:!DATA.sinav)b.classList.add("hidden");
   b.onclick=function(){setMode(t==="hoca"?"hoca":t==="sinav"?"sinav":(lastOgr||(DATA.ogrenci?"ogrenci":"sinif")))}});
 if([hasOgr,!!DATA.hoca,!!DATA.sinav].filter(Boolean).length<2)$("tabs").classList.add("hidden");
-[].forEach.call($("subtabs").children,function(b){b.onclick=function(){setMode(b.dataset.m)}});
+[].forEach.call($("subtabs").children,function(b){b.onclick=function(){setMode(b.dataset.m)};
+  if(b.dataset.m==="sinif"?!DATA.sinif:!DATA.ogrenci)b.classList.add("hidden")});
 [].forEach.call($("lang").children,function(b){b.onclick=function(){setLang(b.dataset.l)}});
 
 function msg(key,arg){MSG=key?[key,arg]:null;var m=$("msg");if(!key){m.classList.add("hidden");return}
@@ -342,12 +384,13 @@ function applyLang(){
   if(DATA.updated){var ud=new Date(DATA.updated);if(!isNaN(ud)){var u=$("upd");u.textContent=(LANG==="en"?"Last updated: ":"Son güncelleme: ")+ud.toLocaleString(LANG==="en"?"en-GB":"tr-TR",{day:"numeric",month:"long",year:"numeric",hour:"2-digit",minute:"2-digit"});u.classList.remove("hidden")}}
   [].forEach.call(document.querySelectorAll("[data-i]"),function(e){e.textContent=L[e.dataset.i]});
   [].forEach.call($("lang").children,function(b){b.setAttribute("aria-pressed",b.dataset.l===LANG);b.setAttribute("aria-selected",b.dataset.l===LANG)});
-  q.placeholder=MODE==="hoca"?L.phHoca:L.phNum;
+  q.placeholder=MODE==="hoca"?L.phHoca:L.phNum;mq.placeholder=L.phMulti;
   $("prog").setAttribute("aria-label",L.prog);$("sin").setAttribute("aria-label",L.sin);
   if(DATA.sinif){var pv=$("prog").value,sv=$("sin").value;fillProg();$("prog").value=pv;if(pv){fillSin(pv);$("sin").value=sv}
     if(pv&&sv&&DATA.sinif[pv][sv]){var nm=DATA.sinif[pv][sv].courses.filter(function(c){return isMinor(c,DATA.sinif[pv][sv].N)}).length;$("minorL").textContent=L.minor(nm);$("minorBox").title=L.minorTip}}
   $("backBtn").textContent=backLabel(backTo);
   if(MODE==="sinav")renderSinav();
+  if(MODE==="coklu")renderMulti();
   if(CUR)render(CUR.p,CUR.kind,CUR.no,true);
   if(RC)drawRoster();
   if(MSG)msg(MSG[0],MSG[1]);
@@ -384,22 +427,24 @@ function setMode(m){
   if(MODE&&MODE!=="sinav")STATE[MODE]={q:q.value,prog:$("prog").value,sin:$("sin").value,cur:CUR,msg:MSG};
   MODE="sinav";CUR=null;MSG=null;
   [].forEach.call($("tabs").children,function(b){b.setAttribute("aria-selected",b.dataset.t==="sinav")});
-  ["subtabs","numbox","selbox","back","msg","res"].forEach(function(i){$(i).classList.add("hidden")});
+  ["subtabs","numbox","selbox","multi","mres","back","msg","res"].forEach(function(i){$(i).classList.add("hidden")});
   sug.classList.add("hidden");$("snv").classList.remove("hidden");renderSinav();
 }
 function setMode0(m){
   $("back").classList.add("hidden");
   if(MODE)STATE[MODE]={q:q.value,prog:$("prog").value,sin:$("sin").value,cur:CUR,msg:MSG};
-  MODE=m;if(m!=="hoca")lastOgr=m;D=m==="sinif"?null:DATA[m];
+  MODE=m;if(m!=="hoca")lastOgr=m;D=m==="sinif"?null:m==="coklu"?DATA.ogrenci:DATA[m];
   [].forEach.call($("tabs").children,function(b){b.setAttribute("aria-selected",b.dataset.t===(m==="hoca"?"hoca":"ogr"))});
   [].forEach.call($("subtabs").children,function(b){b.setAttribute("aria-selected",b.dataset.m===m)});
-  $("subtabs").classList.toggle("hidden",m==="hoca"||!(DATA.ogrenci&&DATA.sinif));
-  $("numbox").classList.toggle("hidden",m==="sinif");$("selbox").classList.toggle("hidden",m!=="sinif");
+  $("subtabs").classList.toggle("hidden",m==="hoca"||!DATA.ogrenci);
+  $("numbox").classList.toggle("hidden",m==="sinif"||m==="coklu");$("selbox").classList.toggle("hidden",m!=="sinif");
+  $("multi").classList.toggle("hidden",m!=="coklu");$("mres").classList.add("hidden");msug.classList.add("hidden");
   q.placeholder=m==="hoca"?L.phHoca:L.phNum;sug.classList.add("hidden");
   var st=STATE[m]||{};q.value=m!=="sinif"&&st.q?st.q:"";
   if(m==="sinif"&&DATA.sinif){$("prog").value=st.prog||"";if(st.prog){fillSin(st.prog);$("sin").value=st.sin}else $("sin").innerHTML=""}
   CUR=null;$("res").classList.add("hidden");
   if(st.cur)render(st.cur.p,st.cur.kind,st.cur.no,true);
+  if(m==="coklu")renderMulti();
   if(st.msg)msg(st.msg[0],st.msg[1]);else msg("");
 }
 
@@ -441,7 +486,7 @@ $("res").addEventListener("click",function(e){var b=e.target.closest(".hl[data-k
   setMode("hoca");q.value=p.name;msg("");render(p,"hoca","");
   showBack(from);
   try{window.scrollTo(0,0)}catch(e){}});
-function backLabel(m){return m==="sinif"?L.backSin:m==="hoca"?L.backHoca:L.backStu}
+function backLabel(m){return m==="sinif"?L.backSin:m==="hoca"?L.backHoca:m==="coklu"?L.backMulti:L.backStu}
 function showBack(from){backTo=from;$("backBtn").textContent=backLabel(from);$("back").classList.remove("hidden")}
 $("backBtn").onclick=function(){var m=backTo;backTo="";$("back").classList.add("hidden");setMode(m)};
 
@@ -508,6 +553,23 @@ function renderAtt(p,kind){
   Object.keys(others).forEach(function(o){lg+='<span><span class="ac O">'+esc(o.charAt(0).toLocaleUpperCase("tr"))+'</span>'+esc(o)+'</span>'});
   $("leg").innerHTML=lg;W.classList.remove("hidden");
 }
+// Haftalık ızgara: cell(b) → {i: renk sırası, tip: ipucu, html: blok içeriği}
+function grid(tt,bl,LW,cell){
+  var used={};bl.forEach(function(b){used[b.d]=1});var days=[0,1,2,3,4].concat([5,6].filter(function(d){return used[d]}));
+  var st=540,en=1020;bl.forEach(function(b){st=Math.min(st,Math.floor(b.a/60)*60);en=Math.max(en,Math.ceil(b.b/60)*60)});
+  var lane={};days.forEach(function(d){var db=bl.filter(function(b){return b.d===d});lanes(db);lane[d]=db.reduce(function(m,b){return Math.max(m,b.n)},1)});
+  var P=1.5,H=(en-st)*P;
+  tt.style.gridTemplateColumns="56px "+days.map(function(d){return"minmax("+(lane[d]*LW)+"px,"+lane[d]+"fr)"}).join(" ");
+  tt.style.minWidth=(56+days.reduce(function(t,d){return t+lane[d]*LW},0))+"px";
+  var h='<div class="head"></div>'+days.map(function(d){return'<div class="head">'+L.days[d]+'</div>'}).join(""),hr="",ln="";
+  for(var t=st;t<=en;t+=60){var y=(t-st)*P;if(t<en)hr+='<span class="hour" style="top:'+(t===st?10:y)+'px">'+fmt(t)+'</span>';ln+='<div class="gl" style="top:'+y+'px"></div>'}
+  h+='<div class="timecol" style="height:'+H+'px">'+hr+'</div>';
+  days.forEach(function(d){var db=bl.filter(function(b){return b.d===d});
+    h+='<div class="day" style="height:'+H+'px">'+ln+db.map(function(b){var x=cell(b),i=x.i;
+      var pos='left:calc('+b.l+' * 100% / '+b.n+' + 3px);width:calc(100% / '+b.n+' - 6px);';
+      return'<div class="blk'+(b.cf?' cf':'')+(b.n>2?' nw':'')+'" tabindex="0" style="'+pos+'--h:'+((b.b-b.a)*P-2)+'px;top:'+((b.a-st)*P+1)+'px;height:'+((b.b-b.a)*P-2)+'px;background:var(--c'+i+');border-color:var(--c'+i+'b)" title="'+esc(x.tip)+'">'+x.html+'</div>'}).join("")+'</div>'});
+  tt.innerHTML=h;
+}
 function render(p,kind,no,quiet){
   CUR={p:p,kind:kind,no:no};
   var HOCA=kind==="hoca",SIN=kind==="sinif",DAYS=L.days;
@@ -515,26 +577,14 @@ function render(p,kind,no,quiet){
   $("pI").textContent=[no].concat(p.info||[]).filter(Boolean).join(", ");
   var bl=p.blocks.map(function(b){var o={};for(var k in b)o[k]=b[k];return o});
   bl.forEach(function(x){x.cf=!SIN&&bl.some(function(y){return y!==x&&y.d===x.d&&y.a<x.b&&x.a<y.b&&!(HOCA&&y.r&&y.r===x.r)})});
-  var used={};bl.forEach(function(b){used[b.d]=1});var days=[0,1,2,3,4].concat([5,6].filter(function(d){return used[d]}));
-  var st=540,en=1020;bl.forEach(function(b){st=Math.min(st,Math.floor(b.a/60)*60);en=Math.max(en,Math.ceil(b.b/60)*60)});
-  var lane={};days.forEach(function(d){var db=bl.filter(function(b){return b.d===d});lanes(db);lane[d]=db.reduce(function(m,b){return Math.max(m,b.n)},1)});
-  var P=1.5,H=(en-st)*P,tt=$("tt"),LW=SIN?160:140;
-  tt.style.gridTemplateColumns="56px "+days.map(function(d){return"minmax("+(lane[d]*LW)+"px,"+lane[d]+"fr)"}).join(" ");
-  tt.style.minWidth=(56+days.reduce(function(t,d){return t+lane[d]*LW},0))+"px";
-  var h='<div class="head"></div>'+days.map(function(d){return'<div class="head">'+DAYS[d]+'</div>'}).join(""),hr="",ln="";
-  for(var t=st;t<=en;t+=60){var y=(t-st)*P;if(t<en)hr+='<span class="hour" style="top:'+(t===st?10:y)+'px">'+fmt(t)+'</span>';ln+='<div class="gl" style="top:'+y+'px"></div>'}
-  h+='<div class="timecol" style="height:'+H+'px">'+hr+'</div>';
-  days.forEach(function(d){var db=bl.filter(function(b){return b.d===d});
-    h+='<div class="day" style="height:'+H+'px">'+ln+db.map(function(b){var c=p.courses[b.c],i=b.c%8;
+  grid($("tt"),bl,SIN?160:140,function(b){var c=p.courses[b.c];
       var meta=fmt(b.a)+'–'+fmt(b.b)+(b.r?'<br>'+esc(b.r):'');
       if(HOCA){var ct=cnt(c,b.c,L.nStu);if(ct)meta+="<br>"+ct}
       if(SIN&&c.n!=null){var cs=cntS(c,b.c,L.nStu);if(cs)meta+="<br>"+cs}
       if(!HOCA&&c.hn)meta+="<br>"+hl(c);
       var head=esc(c.code)+((HOCA||SIN)&&c.sube?' / '+L.sb+' '+esc(c.sube):'')+(b.lab?' '+L.prac:'')+(SIN&&isElec(c.tur)?' · '+L.elec:'');
-      var pos='left:calc('+b.l+' * 100% / '+b.n+' + 3px);width:calc(100% / '+b.n+' - 6px);';
       var tip=[c.code+" "+c.name,fmt(b.a)+"–"+fmt(b.b),b.r,(c.hn||[]).join(", ")].filter(Boolean).join("\n");
-      return'<div class="blk'+(b.cf?' cf':'')+(b.n>2?' nw':'')+'" tabindex="0" style="'+pos+'--h:'+((b.b-b.a)*P-2)+'px;top:'+((b.a-st)*P+1)+'px;height:'+((b.b-b.a)*P-2)+'px;background:var(--c'+i+');border-color:var(--c'+i+'b)" title="'+esc(tip)+'"><b>'+head+'</b><div class="n">'+esc(c.name)+'</div><div class="m">'+meta+'</div></div>'}).join("")+'</div>'});
-  tt.innerHTML=h;
+      return{i:b.c%8,tip:tip,html:'<b>'+head+'</b><div class="n">'+esc(c.name)+'</div><div class="m">'+meta+'</div>'}});
   var C=L.c,OH=!HOCA&&!SIN&&p.courses.some(function(c){return c.hn});
   var sT=p.courses.some(function(c){return c.tur}),sU=p.courses.some(function(c){return c.tul}),sH=p.courses.some(function(c){return c.hn});
   var cols=HOCA?[C.code,C.course,C.sec,C.year,C.type,C.tul,C.cr,C.ects,C.stu,C.prog,C.times]
@@ -559,6 +609,77 @@ function render(p,kind,no,quiet){
   renderAtt(p,kind);
   if(!quiet&&bl.some(function(b){return b.cf}))msg("conflict");
   $("res").classList.remove("hidden");
+}
+/* ---------- Birden fazla öğrenci ---------- */
+var MUL=[];
+if(DATA.ogrenci)try{MUL=(JSON.parse(localStorage.getItem("dp-multi"))||[]).filter(function(no){return DATA.ogrenci.people[no]})}catch(e){MUL=[]}
+function mSave(){try{localStorage.setItem("dp-multi",JSON.stringify(MUL))}catch(e){}}
+// Tek bir parça için öğrenci numaraları; eşleşme yoksa 0, birden fazla kişiyle eşleşirse eşleşme sayısı döner
+function mFind(t){var P=DATA.ogrenci.people,U=function(x){return x.toLocaleUpperCase("tr")};
+  if(P[U(t)])return[U(t)];
+  var w=t.split(/\s+/);if(w.length>1&&w.every(function(x){return P[U(x)]}))return w.map(U);
+  var h=D.list?search(t):[];return h.length===1?[h[0].k]:h.length}
+function mAdd(nos){nos.forEach(function(no){if(MUL.indexOf(no)<0)MUL.push(no)});mSave();renderMulti()}
+function mGo(){msg("");var t=mq.value.trim();if(!t){msg("emptyNum");return}
+  var parts=t.split(/[\n\r,;\t]+/).map(function(s){return s.trim()}).filter(Boolean);
+  if(parts.length===1){var f=mFind(parts[0]);
+    if(typeof f==="number"){if(f){mDraw();mq.focus();msg("multi",f)}else msg("nfNum",parts[0]);return}
+    mq.value="";mAdd(f);return}
+  var add=[],bad=[];
+  parts.forEach(function(s){var f=mFind(s);if(typeof f==="number")bad.push(s);else add=add.concat(f)});
+  mq.value=bad.join(", ");mAdd(add);if(bad.length)msg("nfMulti",bad.join(", "))}
+function mDraw(){if(MODE!=="coklu")return;mhits=search(mq.value).slice(0,12);mact=-1;
+  if(!mhits.length||!mq.value.trim()||/[,;]/.test(mq.value)){msug.classList.add("hidden");return}
+  msug.innerHTML=mhits.map(function(p,i){return'<button type="button" data-i2="'+i+'">'+esc(p.label)+'</button>'}).join("");msug.classList.remove("hidden")}
+function mPick(it){msug.classList.add("hidden");mq.value="";msg("");mAdd([it.k]);mq.focus()}
+msug.addEventListener("mousedown",function(e){var b=e.target.closest("button");if(b){e.preventDefault();mPick(mhits[+b.dataset.i2])}});
+mq.addEventListener("input",mDraw);
+mq.addEventListener("blur",function(){setTimeout(function(){msug.classList.add("hidden")},100)});
+// Excel'den alt alta kopyalanan numaralar: tek satırlık kutu satır sonlarını sileceği için virgüle çevrilir
+mq.addEventListener("paste",function(e){var t=(e.clipboardData||window.clipboardData).getData("text");if(!/[\r\n\t]/.test(t))return;
+  e.preventDefault();var s=mq.selectionStart,v=mq.value,ins=t.split(/[\r\n\t]+/).map(function(x){return x.trim()}).filter(Boolean).join(", ");
+  mq.value=v.slice(0,s)+ins+v.slice(mq.selectionEnd);mq.selectionStart=mq.selectionEnd=s+ins.length;mDraw()});
+mq.addEventListener("keydown",function(e){
+  if(!msug.classList.contains("hidden")&&(e.key==="ArrowDown"||e.key==="ArrowUp")){e.preventDefault();
+    mact=(mact+(e.key==="ArrowDown"?1:-1)+mhits.length)%mhits.length;
+    [].forEach.call(msug.children,function(c,i){c.classList.toggle("act",i===mact)});return}
+  if(e.key==="Escape")msug.classList.add("hidden");
+  if(e.key==="Enter"){e.preventDefault();if(mact>-1&&!msug.classList.contains("hidden"))mPick(mhits[mact]);else mGo()}});
+$("madd").onclick=mGo;
+$("chips").addEventListener("click",function(e){var x=e.target.closest("[data-rm]");
+  if(x){MUL.splice(MUL.indexOf(x.dataset.rm),1)}else if(e.target.closest(".clr"))MUL=[];else return;
+  mSave();msg("");renderMulti();mq.focus()});
+$("mres").addEventListener("click",function(e){var b=e.target.closest(".stu[data-no]");if(!b)return;
+  var no=b.dataset.no;setMode("ogrenci");q.value=no;msg("");render(DATA.ogrenci.people[no],"ogrenci",no);showBack("coklu");try{window.scrollTo(0,0)}catch(e){}});
+function renderMulti(){
+  if(!DATA.ogrenci)return;
+  var P=DATA.ogrenci.people,M=L.mu,sw=function(i){return'<span class="sw" style="background:var(--c'+(i%8)+'b)"></span>'};
+  $("chips").innerHTML=MUL.map(function(no,i){var p=P[no],nm=p.name||no;
+    return'<span class="chip">'+sw(i)+'<span>'+esc(nm)+(p.name?' <small>'+esc(no)+'</small>':'')+'</span><button type="button" class="x" data-rm="'+esc(no)+'" title="'+esc(M.remove)+'" aria-label="'+esc(M.remove+": "+nm)+'">×</button></span>'}).join("")+
+    (MUL.length>1?'<button type="button" class="clr">'+esc(M.clear)+'</button>':"");
+  $("mres").classList.toggle("hidden",!MUL.length);if(!MUL.length)return;
+  var used={};MUL.forEach(function(no){P[no].blocks.forEach(function(b){used[b.d]=1})});
+  var days=[0,1,2,3,4].concat([5,6].filter(function(d){return used[d]})),cnt={};
+  // Öğrenci × gün: o gün okulda olduğu saat aralığı ve ders sayısı
+  var h="<thead><tr><th>"+M.stu+"</th>"+days.map(function(d){return"<th>"+L.days[d]+"</th>"}).join("")+"<th>"+M.dCnt+"</th></tr></thead><tbody>";
+  MUL.forEach(function(no,i){var p=P[no],n=0;
+    h+='<tr><td>'+sw(i)+'<button type="button" class="hl stu" data-no="'+esc(no)+'" title="'+esc(L.r.stu)+'">'+esc(p.name||no)+'</button>'+(p.name?' <small>'+esc(no)+'</small>':'')+'</td>';
+    days.forEach(function(d){var db=p.blocks.filter(function(b){return b.d===d}).sort(function(x,y){return x.a-y.a});
+      if(!db.length){h+='<td class="off">—</td>';return}
+      n++;cnt[d]=(cnt[d]||0)+1;
+      var a=db[0].a,z=Math.max.apply(null,db.map(function(b){return b.b})),k={};db.forEach(function(b){k[b.c]=1});
+      var tip=db.map(function(b){var c=p.courses[b.c];return fmt(b.a)+"–"+fmt(b.b)+"  "+c.code+" "+c.name+(b.r?" ("+b.r+")":"")}).join("\n");
+      h+='<td title="'+esc(tip)+'"><span class="on">'+fmt(a)+'–'+fmt(z)+'</span><small>'+esc(M.lessons(Object.keys(k).length))+'</small></td>'});
+    h+='<td class="sum">'+n+'</td></tr>'});
+  h+="</tbody>";
+  if(MUL.length>1)h+="<tfoot><tr><td>"+M.present+"</td>"+days.map(function(d){var c=cnt[d]||0;return'<td'+(c===MUL.length?' class="all"':'')+'>'+c+" / "+MUL.length+"</td>"}).join("")+"<td></td></tr></tfoot>";
+  $("mdays").innerHTML=h;
+  $("mAll").textContent=M.all(MUL.length,days.filter(function(d){return cnt[d]===MUL.length}).map(function(d){return L.days[d]}));
+  // Birleşik program: her öğrencinin dersleri kendi renginde
+  var bl=[];MUL.forEach(function(no,i){P[no].blocks.forEach(function(b){var o={};for(var k in b)o[k]=b[k];o.s=i;o.no=no;bl.push(o)})});
+  grid($("mtt"),bl,130,function(b){var p=P[b.no],c=p.courses[b.c],nm=p.name||b.no;
+    return{i:b.s%8,tip:[nm,c.code+" "+c.name,fmt(b.a)+"–"+fmt(b.b),b.r].filter(Boolean).join("\n"),
+      html:'<b>'+esc(nm)+'</b><div class="n">'+esc(c.code)+(b.lab?' '+L.prac:'')+'</div><div class="m">'+fmt(b.a)+'–'+fmt(b.b)+(b.r?'<br>'+esc(b.r):'')+'</div>'}});
 }
 /* ---------- Sınavlar ---------- */
 var SNV={v:"",tip:"",prog:"",sin:"",q:"",cur:null},EXK=null,EXC=null,EXH=null,EXHL=null,SNVP=null,SNVT=null;
